@@ -1,0 +1,150 @@
+<!doctype html><html><head><meta charset="utf-8"><style>html,body{margin:0;background:#000}canvas{display:block}</style></head><body>
+<canvas id="c" width="1080" height="1920"></canvas>
+<script src="common.js"></script>
+<script>
+// ===== "£5 a day" — pipes & barrels style =====
+const T0=5.4,T1=15.0,END=15.8,YRS=20;
+const yearsF=t=>clamp((t-T0)/(T1-T0))*YRS;
+const inv=y=>{const m=0.07/12,c=1825/12,n=y*12;return c*((Math.pow(1+m,n)-1)/m);};
+const sav=y=>1825*y;
+const COLS=[
+  {name:'SPENDER',bx:225,cx:75, pipe:'#ff5a6e',tag:'£5 A DAY',lc:'#ff6b7f',acc:'cap'},
+  {name:'SAVER',  bx:585,cx:435,pipe:'#2fd3a8',tag:'£5 A DAY',lc:'#45e3b8',acc:'beanie'},
+  {name:'INVESTOR',bx:945,cx:795,pipe:'#ffc93c',tag:'£5 A DAY',lc:'#ffd25a',acc:'tie'},
+];
+const FLOOR=1420, BTOP=1070, BW=190, BH=FLOOR-BTOP;
+const CAP=60000; // barrel capacity for gauge
+// coin spawn schedules (deterministic)
+function schedule(rateFn){const out=[];let acc=0;for(let t=2.9;t<END+1;t+=1/240){acc+=rateFn(t)/240;while(acc>=1){acc-=1;out.push(t);}}return out;}
+const baseRate=t=>t<2.9?0:(t<T0?2.2:3.2);
+const growthRate=t=>{if(t<T0)return 0;const y=yearsF(t);return 3.2*(0.07*inv(y))/1825;}; // extra coins from growth
+const SP=schedule(baseRate), SV=schedule(baseRate), IV=schedule(baseRate), GR=schedule(growthRate);
+const FALL=0.55;
+
+function wall(){
+  const grd=g.createLinearGradient(0,0,0,H);grd.addColorStop(0,'#1d1f24');grd.addColorStop(0.7,'#2b2e35');grd.addColorStop(1,'#16171b');
+  g.fillStyle=grd;g.fillRect(0,0,W,H);
+  g.strokeStyle='rgba(0,0,0,.35)';g.lineWidth=3;
+  for(let y=60;y<FLOOR;y+=150){g.beginPath();g.moveTo(0,y);g.lineTo(W,y);g.stroke();}
+  for(let r=0;r*150<FLOOR;r++)for(let x=(r%2)*110;x<W;x+=220){g.beginPath();g.moveTo(x,60+r*150);g.lineTo(x,210+r*150);g.stroke();}
+  g.fillStyle='rgba(255,255,255,.03)';for(let r=0;r*150<FLOOR;r++)for(let x=(r%2)*110;x<W;x+=220){g.beginPath();g.arc(x+20,80+r*150,4,0,7);g.fill();g.beginPath();g.arc(x+200,80+r*150,4,0,7);g.fill();}
+  // floor
+  const fg=g.createLinearGradient(0,FLOOR,0,H);fg.addColorStop(0,'#2a2c32');fg.addColorStop(1,'#0c0d10');g.fillStyle=fg;g.fillRect(0,FLOOR,W,H-FLOOR);
+  g.fillStyle='rgba(255,255,255,.08)';g.fillRect(0,FLOOR,W,3);
+}
+function pipe(x,y2,w,col,label,alpha=1){
+  g.save();g.globalAlpha=alpha;
+  g.fillStyle='rgba(0,0,0,.35)';g.fillRect(x-w/2+8,0,w,y2);
+  const grd=g.createLinearGradient(x-w/2,0,x+w/2,0);grd.addColorStop(0,col);grd.addColorStop(0.35,'#ffffff55');grd.addColorStop(0.36,col);grd.addColorStop(1,shade(col));
+  g.fillStyle=grd;g.fillRect(x-w/2,0,w,y2);
+  g.fillStyle=shade(col);for(const yy of [420,760,y2-26]){rr(x-w/2-8,yy,w+16,26,6);g.fill();}
+  g.fillStyle='#111';g.beginPath();g.ellipse(x,y2,w/2,9,0,0,7);g.fill();
+  g.restore();
+  if(label)pillTag(label,x,560,col,alpha);
+}
+function shade(c){const n=parseInt(c.slice(1),16);const r=(n>>16)*0.62,gg=((n>>8)&255)*0.62,b=(n&255)*0.62;return `rgb(${r|0},${gg|0},${b|0})`;}
+function pillTag(s,x,y,col,alpha=1){g.save();g.globalAlpha=alpha;g.font=`900 26px ${F}`;const w=g.measureText(s).width+34;
+  g.fillStyle='#fff';rr(x-w/2,y-22,w,44,22);g.fill();g.strokeStyle=col;g.lineWidth=5;rr(x-w/2,y-22,w,44,22);g.stroke();g.restore();text(s,x,y+1,26,'#16171b',{alpha});}
+function barrel(x,fill,leak){
+  const top=BTOP,w=BW,h=BH;
+  // body
+  g.fillStyle='#3a3d45';rr(x-w/2,top,w,h,18);g.fill();
+  // window w/ gold level
+  const wx=x-46,wy=top+40,ww=92,wh=h-72;
+  g.fillStyle='#14151a';rr(wx,wy,ww,wh,14);g.fill();
+  const fh=wh*clamp(fill);
+  if(fh>0){g.save();rr(wx,wy,ww,wh,14);g.clip();const gg=g.createLinearGradient(0,wy+wh-fh,0,wy+wh);gg.addColorStop(0,'#ffe066');gg.addColorStop(1,'#d39a0b');g.fillStyle=gg;g.fillRect(wx,wy+wh-fh,ww,fh);
+    g.fillStyle='rgba(255,255,255,.25)';for(let i=0;i<fh/18;i++)g.fillRect(wx+8+(i%2)*18,wy+wh-12-i*18,30,4);g.restore();}
+  g.strokeStyle='rgba(255,255,255,.18)';g.lineWidth=3;rr(wx,wy,ww,wh,14);g.stroke();
+  // rings & shading
+  g.fillStyle='#2b2d33';for(const yy of [top+18,top+h-30]){g.fillRect(x-w/2,yy,w,12);}
+  g.fillStyle='rgba(255,255,255,.07)';rr(x-w/2+14,top+10,18,h-20,9);g.fill();
+  // mouth
+  g.fillStyle='#4a4e58';g.beginPath();g.ellipse(x,top,w/2,26,0,0,7);g.fill();
+  g.fillStyle='#121317';g.beginPath();g.ellipse(x,top,w/2-12,18,0,0,7);g.fill();
+  if(fill>0.98){g.fillStyle='#ffd23f';g.beginPath();g.ellipse(x,top-4,w/2-14,16,0,0,7);g.fill();}
+  if(leak){ // hole + spout on right
+    g.fillStyle='#111';g.beginPath();g.ellipse(x+w/2-6,top+h-60,10,16,0,0,7);g.fill();
+  }
+}
+function cupIcon(x,y,s){g.save();g.translate(x,y);g.scale(s,s);g.fillStyle='#f2efe6';g.beginPath();g.moveTo(-14,-36);g.lineTo(14,-36);g.lineTo(10,0);g.lineTo(-10,0);g.closePath();g.fill();g.fillStyle='#8b5a2b';g.fillRect(-12,-24,24,10);g.fillStyle='#ddd';rr(-16,-42,32,8,3);g.fill();g.restore();}
+function bagIcon(x,y,s,c){g.save();g.translate(x,y);g.scale(s,s);g.strokeStyle='#ddd';g.lineWidth=4;g.beginPath();g.arc(0,-34,9,Math.PI,0);g.stroke();g.fillStyle=c;rr(-18,-36,36,36,4);g.fill();g.restore();}
+function burgerIcon(x,y,s){g.save();g.translate(x,y);g.scale(s,s);g.fillStyle='#e0a040';g.beginPath();g.arc(0,-18,20,Math.PI,0);g.fill();g.fillStyle='#5a3a1a';g.fillRect(-21,-18,42,8);g.fillStyle='#4caf50';g.fillRect(-20,-10,40,4);g.fillStyle='#e0a040';rr(-20,-6,40,8,4);g.fill();g.restore();}
+
+function render(t){
+  g.clearRect(0,0,W,H);wall();
+  const Y=yearsF(t),running=t>=T0&&t<T1;
+  const intro=eOut(clamp((t-0.2)/0.8));
+  const gw=clamp((t-T0-1.0)/2)*(26+Y*2.6); // growth pipe width
+  // pipes
+  COLS.forEach((c,i)=>{pipe(c.bx,BTOP-150,54,c.pipe,null,intro);});
+  // growth pipe joins investor
+  if(gw>1){const x=COLS[2].bx-80;pipe(x,BTOP-205,gw,'#3ddc84',null,1);
+    g.fillStyle='#2fa865';rr(x-gw/2,BTOP-225,COLS[2].bx-x+gw/2,Math.max(16,gw*0.7),8);g.fill();
+    pillTag('+ GROWTH',x-10,860,'#3ddc84',clamp((t-T0-1)/0.5));}
+  COLS.forEach(c=>pillTag(c.tag,c.bx,560,c.pipe,intro));
+  // barrels
+  const vS=0, vV=t<T0?(t>3.4?5:0):sav(Y), vI=t<T0?(t>3.4?5:0):inv(Y);
+  barrel(COLS[0].bx,0,true);
+  barrel(COLS[1].bx,vV/CAP,false);
+  barrel(COLS[2].bx,Math.min(1,vI/CAP),false);
+  // investor overflow pile
+  if(vI>CAP){const k=clamp((vI-CAP)/(inv(20)-CAP));
+    for(let i=0;i<Math.floor(k*60);i++){const a=rand(i)*Math.PI,rad=40+rand(i+9)*90*k;coin(COLS[2].bx-BW/2-10-Math.cos(a)*rad*0.6+ (i%2?BW+20:0),FLOOR-6-Math.sin(a)*rad*0.35,13,i);}
+    text('OVERFLOWING!',COLS[2].bx,BTOP-60,30,'#3ddc84',{stroke:7,sc:'#111',alpha:clamp((vI-CAP)/4000)});}
+  // falling coins
+  const fallCoins=(arr,x,color,isGrowth)=>{for(let k=0;k<arr.length;k++){const age=t-arr[k];if(age<0)break;if(age>FALL)continue;
+      const y0=BTOP-150,y1=BTOP-10;coin(x+(rand(k)-0.5)*24+(isGrowth?0:0),y0+(y1-y0)*eIn(age/FALL)*1.0,isGrowth?13:15,k+t*8);}};
+  fallCoins(SP,COLS[0].bx,0);fallCoins(SV,COLS[1].bx,0);fallCoins(IV,COLS[2].bx,0);fallCoins(GR,COLS[2].bx+(rand(3)-0.5)*10,0,true);
+  // spender leak: each coin exits as a purchase
+  for(let k=0;k<SP.length;k++){const age=t-SP[k]-FALL-0.15;if(age<0)break;if(age>1.1)continue;
+    const p=age/1.1,x=COLS[0].bx+BW/2+p*70,y=BTOP+BH-50+(p*p)*60-Math.sin(p*Math.PI)*50;
+    g.save();g.globalAlpha=1-clamp((p-0.7)/0.3);const ty=k%3;ty===0?cupIcon(x,y,0.9):ty===1?burgerIcon(x,y,0.9):bagIcon(x,y,0.9,['#e8394f','#7b5cff','#2bb3ff'][k%3]);g.restore();}
+  if(t>T0)pillTag('LEAKS: COFFEE, TAKEAWAYS',COLS[0].bx+60,860,'#ff5a6e',clamp((t-T0)/0.5));
+  // characters
+  const tt=t;
+  const bobI=Math.sin(t*3)*3;
+  let sFace='happy',sArm=0.25;
+  if(t>13.8){sFace='shock';sArm=2.6;}
+  stick(COLS[0].cx,FLOOR,{acc:'cap',face:sFace,armL:0.2,armR:sArm,look:1,bob:Math.sin(t*5)*3,scale:0.85});
+  stick(COLS[1].cx,FLOOR,{acc:'beanie',face:'meh',armL:0.15,armR:0.15,look:1,bob:Math.sin(t*4+1)*2,scale:0.85});
+  stick(COLS[2].cx,FLOOR,{acc:'tie',col:'#2a3350',face:'cool',armL:0.2,armR:Y>10?2.7:0.6,look:1,bob:bobI,scale:0.85});
+  // speech bubbles
+  const bw=(a,b)=>clamp((t-a)/0.25)*(1-clamp((t-b)/0.25));
+  bubble('TREAT YOURSELF!',COLS[0].cx+170,BTOP-340,bw(6.2,8.4));
+  bubble('SLOW & SAFE',COLS[1].cx+120,BTOP-340,bw(8.6,10.6));
+  bubble('LET IT GROW',COLS[2].cx+20,BTOP-340,bw(10.8,12.8));
+  bubble('WHERE DID IT GO?!',COLS[0].cx+190,BTOP-340,bw(13.8,15.7));
+  // values + labels
+  const lab=clamp((t-0.5)/0.6);
+  const vals=[[gbp(vS),'#ff4d63'],[gbp(vV),'#3ddc84'],[gbp(vI),'#3ddc84']];
+  COLS.forEach((c,i)=>{
+    text(vals[i][0],c.bx,BTOP+BH/2+12,38,vals[i][1],{stroke:9,sc:'#111',alpha:clamp((t-3.0)/0.4)});
+    text(c.name,c.bx-(i===0?40:0),FLOOR+70,40,c.lc,{stroke:9,sc:'#111',spacing:2,alpha:lab});
+  });
+  if(t>T0)text('Spent: '+gbp(sav(Y)),COLS[0].bx-40,FLOOR+120,28,'#ffb3bd',{weight:800,stroke:6,sc:'#111',alpha:1-clamp((t-END)/0.4)});
+  if(t>T0)text('Real value: '+gbp(sav(Y)/Math.pow(1.03,Y)),COLS[1].bx,FLOOR+120,26,'#bfe9cf',{weight:800,stroke:6,sc:'#111',alpha:clamp((t-T0-1)/0.5)});
+  if(t>T0)text('Put in: '+gbp(sav(Y)),COLS[2].bx-20,FLOOR+120,26,'#bfe9cf',{weight:800,stroke:6,sc:'#111'});
+
+  // ---- header band ----
+  const hb=g.createLinearGradient(0,0,0,420);hb.addColorStop(0,'rgba(10,11,14,.92)');hb.addColorStop(1,'rgba(10,11,14,0)');g.fillStyle=hb;g.fillRect(0,0,W,420);
+  if(t<T0){const a=1-clamp((t-T0+0.4)/0.4),s=0.85+0.15*back(clamp(t/0.5));
+    g.save();g.globalAlpha=a;g.translate(540,190);g.scale(s,s);
+    text('SAME £5 A DAY.',0,-50,92,'#fff',{stroke:14,sc:'#111'});
+    text('3 DIFFERENT PIPES.',0,52,92,'#ffd23f',{stroke:14,sc:'#111'});g.restore();}
+  if(t>=T0-0.2&&t<END+0.3){const a=clamp((t-T0+0.2)/0.3)*(1-clamp((t-END)/0.3));const yr=Math.max(1,Math.min(20,Math.ceil(Y)));
+    text('YEAR '+yr,540,140,100,'#fff',{stroke:14,sc:'#111',alpha:a});
+    g.save();g.globalAlpha=a;g.fillStyle='rgba(255,255,255,.15)';rr(240,225,600,18,9);g.fill();g.fillStyle='#ffd23f';rr(240,225,Math.max(18,600*Y/20),18,9);g.fill();g.restore();}
+  // ---- end: message + CTA ----
+  if(t>=END){const a=eOut(clamp((t-END)/0.5));
+    text('SMALL LEAKS',540,150,96,'#fff',{stroke:14,sc:'#111',alpha:a});
+    text('SINK BIG SHIPS.',540,250,96,'#ffd23f',{stroke:14,sc:'#111',alpha:clamp((t-END-0.35)/0.4)});
+    const c=clamp((t-END-1.0)/0.4);
+    text('Follow Daily Money Motivation',540,350,36,'#e6e8ee',{weight:700,stroke:7,sc:'#111',alpha:c});
+    if(c>0){const pressed=t>END+2.3; g.save();g.globalAlpha=c;g.fillStyle=pressed?'#3a3d45':'#ffd23f';rr(420,392,240,70,35);g.fill();g.restore();
+      text(pressed?'Following':'Follow',540,428,34,pressed?'#fff':'#111',{alpha:c});}
+    text('Illustration only: £5/day, 7% avg yearly return (not guaranteed), 3% inflation. Not financial advice.',540,1600,20,'#8f95a6',{weight:500,alpha:a});
+  }
+}
+window.render=render;render(0);
+</script></body></html>

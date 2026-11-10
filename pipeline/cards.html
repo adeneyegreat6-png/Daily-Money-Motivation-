@@ -1,0 +1,120 @@
+<!doctype html><html><head><meta charset="utf-8"><style>html,body{margin:0;background:#000}canvas{display:block}</style></head><body>
+<canvas id="c" width="1080" height="1920"></canvas>
+<script src="common.js"></script>
+<script>
+// ===== "Same £30 a month, same £1,200 phone" — dark minimal style =====
+const M=82,PAY=30,PRICE=1200,BUY=40;
+const T0=5.4,T1=15.0,END=15.8;
+const debt=[PRICE],intr=[0];
+for(let m=1;m<=M;m++){let b=debt[m-1];const i=b*0.02;b+=i;b-=Math.min(PAY,b);debt.push(Math.max(0,b));intr.push(intr[m-1]+i);}
+const lerpA=(a,x)=>{const i=Math.floor(x),f=x-i;return i>=a.length-1?a[a.length-1]:a[i]+(a[i+1]-a[i])*f;};
+const inv=m=>{const r=0.07/12;return PAY*((Math.pow(1+r,m)-1)/r);};
+const FLOOR=1290, COLX=[180,540,900], UNIT=100, BH=18;
+function bundle(x,y,w,col,band){g.fillStyle=col;rr(x-w/2,y-BH+1,w,BH-2,3);g.fill();g.fillStyle='rgba(255,255,255,.25)';g.fillRect(x-w/2+4,y-BH+3,w-8,2);g.fillStyle=band;g.fillRect(x-7,y-BH+1,14,BH-2);}
+function stack(x,val,col,band,glow){
+  const n=val/UNIT, full=Math.floor(n);
+  if(glow){const gr=g.createRadialGradient(x,FLOOR-n*BH/2,10,x,FLOOR-n*BH/2,140+n*6);gr.addColorStop(0,'rgba(61,220,132,.28)');gr.addColorStop(1,'rgba(61,220,132,0)');g.fillStyle=gr;g.fillRect(x-300,FLOOR-n*BH-300,600,n*BH+300);}
+  for(let i=0;i<full;i++)bundle(x+(rand(i)-0.5)*4,FLOOR-i*BH,100,col,band);
+  const f=n-full;if(f>0.05){g.save();g.globalAlpha=f;bundle(x,FLOOR-full*BH,100,col,band);g.restore();}
+  return FLOOR-Math.ceil(n)*BH;
+}
+function dashedBox(x,val,col){const h=val/UNIT*BH;g.save();g.setLineDash([10,8]);g.strokeStyle=col;g.lineWidth=3;g.strokeRect(x-56,FLOOR-h,112,h);g.restore();}
+function phoneIcon(x,y,s,crack=0,ghost=false){
+  g.save();g.translate(x,y);g.scale(s,s);if(ghost)g.globalAlpha*=0.35;
+  g.fillStyle='#111';rr(-30,-56,60,112,12);g.fill();g.strokeStyle='#555';g.lineWidth=3;rr(-30,-56,60,112,12);g.stroke();
+  const gr=g.createLinearGradient(0,-50,0,50);gr.addColorStop(0,'#6a5cff');gr.addColorStop(1,'#2bb3ff');g.fillStyle=gr;rr(-25,-48,50,96,8);g.fill();
+  if(crack>0){g.strokeStyle='rgba(255,255,255,.95)';g.lineWidth=2.5;const pts=[[-20,-40],[22,-44],[-22,18],[20,38],[-6,46],[24,0],[-24,-6]];g.beginPath();
+    for(let k=0;k<Math.floor(crack*7);k++){g.moveTo(5,-8);g.lineTo((5+pts[k][0])/2+(k%2?5:-5),(-8+pts[k][1])/2);g.lineTo(pts[k][0],pts[k][1]);}g.stroke();}
+  g.restore();
+}
+function cardIcon(x,y,s){g.save();g.translate(x,y);g.scale(s,s);g.fillStyle='#d63a5a';rr(-40,-26,80,52,8);g.fill();g.fillStyle='#ffd23f';rr(-30,-12,18,13,3);g.fill();g.fillStyle='rgba(255,255,255,.6)';g.fillRect(-30,12,52,5);g.restore();}
+function bill(x,y,s,amt){g.save();g.translate(x,y);g.scale(s,s);g.rotate(-0.08);
+  g.fillStyle='#fff';rr(-110,-70,220,140,8);g.fill();g.fillStyle='#e8394f';g.fillRect(-110,-70,220,38);
+  g.restore();g.save();g.translate(x,y);g.scale(s,s);g.rotate(-0.08);
+  text('CARD STATEMENT',0,-51,20,'#fff');text('TOTAL PAID',0,-8,18,'#666',{weight:800});text(amt,0,30,46,'#e8394f');g.restore();}
+
+function render(t){
+  g.fillStyle='#060709';g.fillRect(0,0,W,H);
+  const sp=g.createRadialGradient(540,1050,50,540,1050,800);sp.addColorStop(0,'rgba(255,255,255,.07)');sp.addColorStop(1,'rgba(255,255,255,0)');g.fillStyle=sp;g.fillRect(0,0,W,H);
+  g.fillStyle='#1c1e24';g.fillRect(60,FLOOR,960,3);
+  const mF=clamp((t-T0)/(T1-T0))*M, running=t>=T0&&t<T1, ph=((t-T0)/((T1-T0)/M))%1;
+  const done=t>=T1;
+
+  // investor glow (behind)
+  const ig=g.createRadialGradient(COLX[2]-60,FLOOR-180,20,COLX[2]-60,FLOOR-180,260);ig.addColorStop(0,`rgba(60,140,255,${0.18+0.12*clamp(mF/M)})`);ig.addColorStop(1,'rgba(60,140,255,0)');g.fillStyle=ig;g.fillRect(COLX[2]-400,FLOOR-500,800,600);
+
+  // ---- BORROWER ----
+  {const x=COLX[0],cx=x-66,sx=x+78;
+    const b=t<T0?(t>3.6?PRICE:0):lerpA(debt,mF), it=lerpA(intr,mF);
+    if(t>3.6)stack(sx,b,'#c9364f','#ffb3c0');
+    let armR=0.2,face='happy',hold=null;
+    if(t>2.6&&t<3.6){armR=1.4;hold=(hx,hy)=>cardIcon(hx+12,hy,0.7);}
+    if(t>=3.6){armR=1.3;hold=(hx,hy)=>phoneIcon(hx+6,hy-28,0.55,clamp((mF-10)/60));}
+    if(mF>45)face='meh'; if(done)face='sad';
+    if(t>=END+0.3){armR=1.5;hold=(hx,hy)=>bill(hx+80,hy-50,1.0*eOut(clamp((t-END-0.3)/0.4)),'£2,438');}
+    stick(cx,FLOOR,{acc:'cap',face,armL:0.15,armR,hold,look:1,scale:0.92,bob:Math.sin(t*5)*2});
+    // price icon above
+    const ia=clamp((t-1.0)/0.4)*(1-clamp((t-3.8)/0.3));
+    if(ia>0){g.save();g.globalAlpha=ia;phoneIcon(cx,FLOOR-470,0.75);g.restore();text('£1,200',cx,FLOOR-395,30,'#ffd23f',{alpha:ia});}
+    if(running&&Math.floor(mF)%3===0)pop('-£30',sx,FLOOR-b/UNIT*BH-50,ph,'#ff4d63',34);
+    if(t>3.6)pop('BOUGHT TODAY!',x,FLOOR-500,(t-3.6)/1.4,'#7fd3ff',36);
+    const big=done?'£2,438':gbp(-b);
+    text(big,x,FLOOR+80,68,'#ff4d63',{alpha:clamp((t-0.6)/0.4)});
+    text(done?'TOTAL PAID':'CREDIT CARD',x,FLOOR+140,26,'#ff4d63',{spacing:3,alpha:clamp((t-0.6)/0.4)});
+    text(t>=T0?'Interest so far: '+gbp(it):'24% APR · £30/month',x,FLOOR+178,21,'#8f95a6',{weight:700,spacing:1,alpha:clamp((t-0.6)/0.4)});
+  }
+  // ---- SAVER ----
+  {const x=COLX[1],cx=x-66,sx=x+78;
+    const bought=mF>=BUY, cash=t<T0?0:(bought?PAY*(mF-BUY):PAY*mF);
+    const buyT=T0+BUY*(T1-T0)/M;
+    if(!bought)dashedBox(sx,PRICE,'rgba(61,220,132,.5)');
+    stack(sx,cash,'#2fae63','#c8f5d8');
+    // cash flies up at purchase
+    const fa=(t-buyT)/0.6;
+    if(fa>0&&fa<1){g.save();g.globalAlpha=1-fa;for(let i=0;i<12;i++)bundle(sx+(cx-sx)*eOut(fa),FLOOR-i*BH-fa*200,100,'#2fae63','#c8f5d8');g.restore();}
+    let armR=0.2,hold=null,face='meh';
+    if(bought){armR=1.3;face='happy';hold=(hx,hy)=>phoneIcon(hx+6,hy-28,0.55,0);}
+    if(running&&!bought&&ph<0.3)armR=0.9;
+    stick(cx,FLOOR,{acc:'beanie',face,armL:0.15,armR,hold,look:1,scale:0.92,bob:Math.sin(t*4+1)*2});
+    const ia=clamp((t-1.2)/0.4);
+    if(!bought&&ia>0){g.save();g.globalAlpha=ia;phoneIcon(cx,FLOOR-470,0.75,0,true);g.restore();
+      text(t<T0?'SAVES FIRST':'IN '+Math.max(1,Math.ceil(BUY-mF))+' MONTHS',cx,FLOOR-395,26,'#3ddc84',{alpha:ia});}
+    pop('PAID IN CASH!',x,FLOOR-500,(t-buyT)/1.6,'#3ddc84',36);
+    text(gbp(cash),x,FLOOR+80,68,'#3ddc84',{alpha:clamp((t-0.8)/0.4)});
+    text('CASH',x,FLOOR+140,26,'#3ddc84',{spacing:3,alpha:clamp((t-0.8)/0.4)});
+    text(bought?'Phone paid · £0 interest':'Saves £30/month',x,FLOOR+178,21,'#8f95a6',{weight:700,spacing:1,alpha:clamp((t-0.8)/0.4)});
+  }
+  // ---- INVESTOR ----
+  {const x=COLX[2],cx=x-66,sx=x+78;
+    const v=t<T0?0:inv(mF);
+    stack(sx,v,'#2fae63','#c8f5d8',true);
+    let armR=running&&ph<0.3?0.9:0.2;
+    stick(cx,FLOOR,{acc:'tie',col:'#2a3350',face:'cool',armL:0.15,armR,look:1,scale:0.92,bob:Math.sin(t*3+2)*2});
+    const ia=clamp((t-1.4)/0.4)*(1-clamp((t-T0)/0.3));
+    if(ia>0)text('INVESTS IT',cx,FLOOR-395,26,'#7fb6ff',{alpha:ia});
+    text(gbp(v),x,FLOOR+80,68,'#3ddc84',{alpha:clamp((t-1.0)/0.4)});
+    text('INVESTED',x,FLOOR+140,26,'#7fb6ff',{spacing:3,alpha:clamp((t-1.0)/0.4)});
+    text('Index fund · 7% avg',x,FLOOR+178,21,'#8f95a6',{weight:700,spacing:1,alpha:clamp((t-1.0)/0.4)});
+  }
+
+  // ---- header ----
+  const hA=1-clamp((t-END)/0.4);
+  if(hA>0){
+    text('SAME £30 A MONTH.',540,250,74,'#fff',{alpha:hA*clamp(t/0.4)});
+    text('SAME £1,200 PHONE.',540,335,74,'#fff',{alpha:hA*clamp((t-0.3)/0.4)});
+    if(t>=T0-0.3){const mm=Math.max(1,Math.min(M,Math.ceil(mF)));const a=hA*clamp((t-T0+0.3)/0.3);
+      text('MONTH',505,440,30,'#9aa0b2',{align:'right',spacing:6,alpha:a});text(String(mm),525,440,74,'#ffd23f',{align:'left',alpha:a});}
+  }
+  if(t>=END){const a=clamp((t-END-0.2)/0.4);
+    text("IF YOU CAN'T BUY IT TWICE,",540,250,62,'#fff',{alpha:a});
+    text("YOU CAN'T AFFORD IT.",540,325,62,'#3ddc84',{alpha:clamp((t-END-0.6)/0.4)});
+    const c=clamp((t-END-1.2)/0.4);
+    text('Follow Daily Money Motivation',540,1628,34,'#cfd3e0',{weight:700,alpha:c});
+    if(c>0){const pressed=t>END+2.4;g.save();g.globalAlpha=c;g.fillStyle=pressed?'#2a2d35':'#ffd23f';rr(425,1662,230,64,32);g.fill();g.restore();
+      text(pressed?'Following':'Follow',540,1695,30,pressed?'#fff':'#111',{alpha:c});}
+    text('Illustration only: £1,200 at 24% APR, £30/month payments.',540,1520,20,'#6f7486',{weight:500,alpha:a});
+    text('Investing assumes 7% avg yearly return, not guaranteed. Not financial advice.',540,1550,20,'#6f7486',{weight:500,alpha:a});
+  }
+}
+window.render=render;render(0);
+</script></body></html>

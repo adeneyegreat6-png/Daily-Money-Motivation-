@@ -1,0 +1,146 @@
+<!doctype html><html><head><meta charset="utf-8"><style>html,body{margin:0;background:#000}canvas{display:block}</style></head><body>
+<canvas id="c" width="1080" height="1920"></canvas>
+<script>
+// orientation from query string: ?wide=1 → 1920x1080
+if(location.search.includes('wide')){const c=document.getElementById('c');c.width=1920;c.height=1080;}
+</script>
+<script src="common.js"></script>
+<script>
+// ===== How to Budget: the 50/30/20 rule — pipes & barrels style =====
+const WIDE=W>H;
+const PAY=2000, SPLIT=[0.5,0.3,0.2], MONTHS=12;
+const T0=5.0, T1=14.6, END=15.4;
+const L=WIDE?{
+  BX:[640,1060,1480], CX:330, BW:190, BTOP:560, FLOOR:860, MAN:285, MAINX:1060, RINGS:[150,400],
+  mainTag:[1060,225], tagY:368, lblY:910, subY:948, disc:1066,
+  hook:[960,115], hookSize:80, yearY:88, barY:150, barW:600,
+  bubbleY:440,
+}:{
+  BX:[330,620,910], CX:120, BW:170, BTOP:1070, FLOOR:1420, MAN:560, MAINX:620, RINGS:[470,800],
+  mainTag:[620,470], tagY:790, lblY:1490, subY:1540, disc:1580,
+  hook:[540,175], hookSize:84, yearY:130, barY:215, barW:600,
+  bubbleY:985,
+};
+const FLOOR=L.FLOOR,BTOP=L.BTOP,BW=L.BW,BH=FLOOR-BTOP;
+const COLS=[
+  {name:'NEEDS 50%', col:'#4da3ff', lc:'#7fbcff', sub:'Rent · bills · food', w:66},
+  {name:'WANTS 30%', col:'#ff7a59', lc:'#ff9a80', sub:'Fun · eating out',     w:48},
+  {name:'SAVINGS 20%',col:'#3ddc84', lc:'#5ff09c', sub:'Saved so far',        w:36},
+];
+const monthF=t=>clamp((t-T0)/(T1-T0))*MONTHS;
+function schedule(rate){const out=[];let acc=0;for(let t=3.0;t<END+1;t+=1/240){acc+=rate/240;while(acc>=1){acc-=1;out.push(t);}}return out;}
+const SCH=[schedule(5),schedule(3),schedule(2)];
+const FALL=0.5;
+
+function shade(c){const n=parseInt(c.slice(1),16);return `rgb(${((n>>16)*0.6)|0},${(((n>>8)&255)*0.6)|0},${((n&255)*0.6)|0})`;}
+function wall(){
+  const grd=g.createLinearGradient(0,0,0,H);grd.addColorStop(0,'#1d1f24');grd.addColorStop(0.7,'#2b2e35');grd.addColorStop(1,'#16171b');
+  g.fillStyle=grd;g.fillRect(0,0,W,H);g.strokeStyle='rgba(0,0,0,.35)';g.lineWidth=3;
+  for(let y=60;y<FLOOR;y+=150){g.beginPath();g.moveTo(0,y);g.lineTo(W,y);g.stroke();}
+  for(let r=0;r*150<FLOOR;r++)for(let x=(r%2)*110;x<W;x+=220){g.beginPath();g.moveTo(x,60+r*150);g.lineTo(x,210+r*150);g.stroke();}
+  const fg=g.createLinearGradient(0,FLOOR,0,H);fg.addColorStop(0,'#2a2c32');fg.addColorStop(1,'#0c0d10');g.fillStyle=fg;g.fillRect(0,FLOOR,W,H-FLOOR);
+  g.fillStyle='rgba(255,255,255,.08)';g.fillRect(0,FLOOR,W,3);
+}
+function vpipe(x,y1,y2,w,col,a=1){
+  g.save();g.globalAlpha=a;g.fillStyle='rgba(0,0,0,.35)';g.fillRect(x-w/2+8,y1,w,y2-y1);
+  const grd=g.createLinearGradient(x-w/2,0,x+w/2,0);grd.addColorStop(0,col);grd.addColorStop(0.35,'#ffffff55');grd.addColorStop(0.36,col);grd.addColorStop(1,shade(col));
+  g.fillStyle=grd;g.fillRect(x-w/2,y1,w,y2-y1);
+  g.fillStyle=shade(col);for(const yy of [...L.RINGS.filter(r=>r>y1+10&&r<y2-40),y2-26]){rr(x-w/2-8,yy,w+16,26,6);g.fill();}
+  g.fillStyle='#111';g.beginPath();g.ellipse(x,y2,w/2,9,0,0,7);g.fill();g.restore();
+}
+function pillTag(s,x,y,col,a=1,size=26){if(a<=0)return;g.save();g.globalAlpha=a;g.font=`900 ${size}px ${F}`;const w=g.measureText(s).width+34;
+  g.fillStyle='#fff';rr(x-w/2,y-size*0.85,w,size*1.7,size*0.85);g.fill();g.strokeStyle=col;g.lineWidth=5;rr(x-w/2,y-size*0.85,w,size*1.7,size*0.85);g.stroke();g.restore();text(s,x,y+1,size,'#16171b',{alpha:a});}
+function barrel(x,fill,goldTop){
+  const top=BTOP,w=BW,h=BH;
+  g.fillStyle='#3a3d45';rr(x-w/2,top,w,h,18);g.fill();
+  const wx=x-42,wy=top+40,ww=84,wh=h-72;g.fillStyle='#14151a';rr(wx,wy,ww,wh,14);g.fill();
+  const fh=wh*clamp(fill);
+  if(fh>0){g.save();rr(wx,wy,ww,wh,14);g.clip();const gg=g.createLinearGradient(0,wy+wh-fh,0,wy+wh);gg.addColorStop(0,'#ffe066');gg.addColorStop(1,'#d39a0b');g.fillStyle=gg;g.fillRect(wx,wy+wh-fh,ww,fh);
+    g.fillStyle='rgba(255,255,255,.25)';for(let i=0;i<fh/18;i++)g.fillRect(wx+8+(i%2)*18,wy+wh-12-i*18,30,4);g.restore();}
+  g.strokeStyle='rgba(255,255,255,.18)';g.lineWidth=3;rr(wx,wy,ww,wh,14);g.stroke();
+  g.fillStyle='#2b2d33';for(const yy of [top+18,top+h-30])g.fillRect(x-w/2,yy,w,12);
+  g.fillStyle='#4a4e58';g.beginPath();g.ellipse(x,top,w/2,24,0,0,7);g.fill();g.fillStyle='#121317';g.beginPath();g.ellipse(x,top,w/2-12,16,0,0,7);g.fill();
+  if(goldTop){g.fillStyle='#ffd23f';g.beginPath();g.ellipse(x,top-3,w/2-14,13,0,0,7);g.fill();}
+}
+// spend icons
+function house(x,y,s){g.save();g.translate(x,y);g.scale(s,s);g.fillStyle='#e9e3c9';g.fillRect(-18,-30,36,30);g.fillStyle='#d6453d';g.beginPath();g.moveTo(-24,-28);g.lineTo(0,-50);g.lineTo(24,-28);g.closePath();g.fill();g.fillStyle='#6b4a2b';g.fillRect(-6,-16,12,16);g.restore();}
+function bulb(x,y,s){g.save();g.translate(x,y);g.scale(s,s);g.fillStyle='#ffe066';g.beginPath();g.arc(0,-30,16,0,7);g.fill();g.fillStyle='#aaa';g.fillRect(-8,-16,16,12);g.restore();}
+function cart(x,y,s){g.save();g.translate(x,y);g.scale(s,s);g.strokeStyle='#cfd3e0';g.lineWidth=4;g.beginPath();g.moveTo(-24,-40);g.lineTo(-16,-40);g.lineTo(-10,-14);g.lineTo(18,-14);g.lineTo(22,-32);g.lineTo(-14,-32);g.stroke();g.fillStyle='#cfd3e0';g.beginPath();g.arc(-6,-6,4,0,7);g.fill();g.beginPath();g.arc(14,-6,4,0,7);g.fill();g.restore();}
+function burger(x,y,s){g.save();g.translate(x,y);g.scale(s,s);g.fillStyle='#e0a040';g.beginPath();g.arc(0,-18,20,Math.PI,0);g.fill();g.fillStyle='#5a3a1a';g.fillRect(-21,-18,42,8);g.fillStyle='#4caf50';g.fillRect(-20,-10,40,4);g.fillStyle='#e0a040';rr(-20,-6,40,8,4);g.fill();g.restore();}
+function ticket(x,y,s){g.save();g.translate(x,y);g.scale(s,s);g.fillStyle='#ff5a8a';rr(-24,-34,48,28,5);g.fill();g.fillStyle='#fff';g.fillRect(-4,-30,3,20);g.restore();}
+function bagI(x,y,s){g.save();g.translate(x,y);g.scale(s,s);g.strokeStyle='#ddd';g.lineWidth=4;g.beginPath();g.arc(0,-34,9,Math.PI,0);g.stroke();g.fillStyle='#7b5cff';rr(-18,-36,36,36,4);g.fill();g.restore();}
+const ICONS=[[house,bulb,cart],[burger,ticket,bagI]];
+
+function render(t){
+  g.clearRect(0,0,W,H);wall();
+  const mF=monthF(t), running=t>=T0&&t<T1, done=t>=T1;
+  const ph=running?mF%1:(done?1:0);
+  const intro=eOut(clamp((t-0.2)/0.8));
+  // main pay pipe + manifold
+  vpipe(L.MAINX,0,L.MAN+20,86,'#ffd23f',intro);
+  g.save();g.globalAlpha=intro;g.fillStyle='#c79a14';rr(L.BX[0]-40,L.MAN,L.BX[2]-L.BX[0]+80,46,14);g.fill();g.fillStyle='#ffd23f';rr(L.BX[0]-40,L.MAN,L.BX[2]-L.BX[0]+80,30,14);g.fill();g.restore();
+  COLS.forEach((c,i)=>vpipe(L.BX[i],L.MAN+40,BTOP-140,c.w,c.col,intro));
+  // tags
+  pillTag(`£${PAY.toLocaleString('en-GB')} PAY`,L.mainTag[0],L.mainTag[1],'#ffd23f',intro,30);
+  COLS.forEach((c,i)=>pillTag(c.name,L.BX[i],L.tagY,c.col,clamp((t-0.8-i*0.25)/0.4),24));
+  // barrels
+  const fillCycle=ph<0.65?ph/0.65:1-(ph-0.65)/0.35;
+  const nwFill=t<T0?clamp((t-3.4)/1.6)*0.5:(done?0.15:fillCycle);
+  const savedV=t<T0?0:PAY*SPLIT[2]*mF;
+  barrel(L.BX[0],nwFill,false);
+  barrel(L.BX[1],nwFill,false);
+  barrel(L.BX[2],savedV/(PAY*SPLIT[2]*MONTHS),savedV>=PAY*SPLIT[2]*MONTHS-1);
+  // falling coins
+  SCH.forEach((arr,i)=>{for(let k=0;k<arr.length;k++){const age=t-arr[k];if(age<0)break;if(age>FALL)continue;
+      const y0=BTOP-140,y1=BTOP-8;coin(L.BX[i]+(rand(k+i*99)-0.5)*c_w(i),y0+(y1-y0)*eIn(age/FALL),14,k+t*8);}});
+  function c_w(i){return COLS[i].w*0.5;}
+  // monthly drain: needs & wants pay out
+  if(running&&ph>0.65){const p=(ph-0.65)/0.35;
+    for(let i=0;i<2;i++)for(let j=0;j<3;j++){const q=clamp(p*1.2-j*0.12);if(q<=0||q>=1)continue;
+      const dir=WIDE?(j-1)*0.9:(i===0?-1:1)*(0.4+j*0.35);
+      const x=L.BX[i]+dir*BW*0.9*q, y=BTOP+BH*0.55-Math.sin(q*Math.PI)*120+q*q*40;
+      g.save();g.globalAlpha=1-clamp((q-0.75)/0.25);ICONS[i][j](x,y,1);g.restore();}}
+  // values on barrels
+  const va=clamp((t-3.2)/0.4);
+  text('£'+(PAY*SPLIT[0]).toLocaleString('en-GB'),L.BX[0],BTOP+BH/2+10,40,'#7fbcff',{stroke:9,sc:'#111',alpha:va});
+  text('£'+(PAY*SPLIT[1]),L.BX[1],BTOP+BH/2+10,40,'#ff9a80',{stroke:9,sc:'#111',alpha:va});
+  text(gbp(savedV),L.BX[2],BTOP+BH/2+10,40,'#5ff09c',{stroke:9,sc:'#111',alpha:va});
+  text('a month',L.BX[0],BTOP+BH/2+48,22,'#cfd3e0',{weight:700,stroke:6,sc:'#111',alpha:va});
+  text('a month',L.BX[1],BTOP+BH/2+48,22,'#cfd3e0',{weight:700,stroke:6,sc:'#111',alpha:va});
+  // labels
+  COLS.forEach((c,i)=>{const a=clamp((t-0.6)/0.6);
+    text(c.name,L.BX[i],L.lblY,WIDE?36:32,c.lc,{stroke:8,sc:'#111',spacing:1,alpha:a});
+    text(c.sub,L.BX[i],L.subY,WIDE?24:22,'#cfd3e0',{weight:700,stroke:6,sc:'#111',alpha:a});});
+  if(done)pop('+£4,800 IN 1 YEAR!',L.BX[2]-(WIDE?0:60),BTOP-60,(t-T1)/2.2,'#3ddc84',WIDE?44:38);
+  // character
+  let face='meh',armR=0.2;
+  if(t>T0+2)face='happy'; if(done){armR=2.7;}
+  stick(L.CX,FLOOR,{acc:'beanie',face,armL:0.15,armR,look:1,scale:WIDE?0.85:0.8,bob:Math.sin(t*4)*2});
+  const bw=(a,b)=>clamp((t-a)/0.25)*(1-clamp((t-b)/0.25));
+  const bx=L.CX+(WIDE?150:150);
+  bubble('WHERE DOES IT GO?',bx,L.bubbleY,bw(1.4,3.6));
+  bubble('BILLS: PAID ✓',bx-10,L.bubbleY,bw(6.6,8.6));
+  bubble('STILL HAD FUN ✓',bx,L.bubbleY,bw(9.4,11.4));
+  bubble('SAVING ON AUTOPILOT',bx+20,L.bubbleY,bw(12.0,14.4));
+
+  // header band
+  const hb=g.createLinearGradient(0,0,0,WIDE?220:400);hb.addColorStop(0,'rgba(10,11,14,.94)');hb.addColorStop(1,'rgba(10,11,14,0)');g.fillStyle=hb;g.fillRect(0,0,W,WIDE?220:400);
+  if(t<T0){const a=1-clamp((t-T0+0.4)/0.4),s=0.85+0.15*back(clamp(t/0.5));
+    g.save();g.globalAlpha=a;g.translate(L.hook[0],L.hook[1]);g.scale(s,s);
+    text('HOW TO BUDGET:',0,-45,L.hookSize,'#fff',{stroke:14,sc:'#111'});
+    text('THE 50/30/20 RULE',0,45,L.hookSize,'#ffd23f',{stroke:14,sc:'#111'});g.restore();}
+  if(t>=T0-0.2&&t<END+0.3){const a=clamp((t-T0+0.2)/0.3)*(1-clamp((t-END)/0.3));const mm=Math.max(1,Math.min(MONTHS,Math.ceil(mF)));
+    text('MONTH '+mm,W/2,L.yearY,WIDE?88:100,'#fff',{stroke:14,sc:'#111',alpha:a});
+    g.save();g.globalAlpha=a;g.fillStyle='rgba(255,255,255,.15)';rr(W/2-L.barW/2,L.barY,L.barW,18,9);g.fill();g.fillStyle='#ffd23f';rr(W/2-L.barW/2,L.barY,Math.max(18,L.barW*mF/MONTHS),18,9);g.fill();g.restore();}
+  if(t>=END){const a=eOut(clamp((t-END)/0.5)),b=clamp((t-END-0.35)/0.4),c=clamp((t-END-1.0)/0.4),pressed=t>END+2.3;
+    if(WIDE){text('GIVE EVERY POUND',1165,78,80,'#fff',{stroke:14,sc:'#111',alpha:a,align:'right'});text('A JOB.',1190,78,80,'#ffd23f',{stroke:14,sc:'#111',alpha:b,align:'left'});
+      text('Follow Daily Money Motivation',860,1012,30,'#e6e8ee',{weight:700,stroke:7,sc:'#111',alpha:c});
+      if(c>0){g.save();g.globalAlpha=c;g.fillStyle=pressed?'#3a3d45':'#ffd23f';rr(1110,984,200,56,28);g.fill();g.restore();text(pressed?'Following':'Follow',1210,1013,26,pressed?'#fff':'#111',{alpha:c});}}
+    else{text('GIVE EVERY POUND',540,130,84,'#fff',{stroke:14,sc:'#111',alpha:a});text('A JOB.',540,225,96,'#ffd23f',{stroke:14,sc:'#111',alpha:b});
+      text('Follow Daily Money Motivation',540,1640,36,'#e6e8ee',{weight:700,stroke:7,sc:'#111',alpha:c});
+      if(c>0){g.save();g.globalAlpha=c;g.fillStyle=pressed?'#3a3d45':'#ffd23f';rr(420,1676,240,66,33);g.fill();g.restore();text(pressed?'Following':'Follow',540,1710,32,pressed?'#fff':'#111',{alpha:c});}}
+    text('Example: £2,000/month take-home pay. Adjust the split to your situation. Not financial advice.',W/2,L.disc,WIDE?15:19,'#8f95a6',{weight:500,alpha:a});
+  }
+}
+window.render=render;render(0);
+</script></body></html>
