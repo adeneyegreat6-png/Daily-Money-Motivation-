@@ -1,0 +1,99 @@
+<!doctype html><html><head><meta charset="utf-8"><style>html,body{margin:0;background:#000}canvas{display:block}</style></head><body>
+<canvas id="c" width="1080" height="1920"></canvas>
+<script>const WIDE=location.search.includes('wide');if(WIDE){const c=document.getElementById('c');c.width=1920;c.height=1080;}</script>
+<script src="common.js"></script>
+<script>
+// ===== "How compound interest works: start at 25 vs 35" — gym, motivated vs disciplined =====
+const PM=200,RATE=0.07,A0=25,A1=65,LATE=35,PLATE=25000;
+// monthly compounding, contribution at the start of each month
+function bal(startAge,age){const m=Math.max(0,Math.round((age-startAge)*12));let b=0;for(let i=0;i<m;i++)b=(b+PM)*(1+RATE/12);return b;}
+const BAL={};for(let a=A0*12;a<=A1*12;a++){BAL['d'+a]=bal(A0,a/12);BAL['m'+a]=bal(LATE,a/12);}
+const balAt=(who,age)=>{const m=Math.floor(age*12),f=age*12-m;const b0=BAL[who+m]||0,b1=BAL[who+Math.min(m+1,A1*12)]||0;return b0+(b1-b0)*f;};
+const FD=BAL['d'+A1*12],FM=BAL['m'+A1*12],GAP=FD-FM;
+const k=v=>v<500?'£0':'£'+Math.round(v/1000).toLocaleString('en-GB')+'k';
+console.log('FD',FD,'FM',FM,'GAP',GAP);
+const T0=4.4,T1=14.2,END=15.9,YRS=A1-A0;
+const L=WIDE?{FLOOR:800,COLX:[640,1280],BH:15,PW:96,sc:0.8,head:[80,155],age:235,tag:[320,370,420],pop:350,ev:[330,395],lab:[70,120,154],fs:[60,24,20],bub:[0,430],
+  cta:{tx:860,ty:1018,ts:30,b:[1115,990,190,56,28],bx:1210,by:1019,bs:26},disc:1062,ds:15,end:[80,152],es:62,line:[260,1660]}
+ :{FLOOR:1300,COLX:[280,800],BH:24,PW:120,sc:1.15,head:[250,335],age:440,tag:[600,665,730],pop:580,ev:[560,640],lab:[80,140,178],fs:[68,26,21],bub:[0,760],
+  cta:{tx:540,ty:1640,ts:34,b:[420,1676,240,66,33],bx:540,by:1709,bs:30},disc:1515,ds:19,end:[250,325],es:62,line:[40,1000]};
+const {FLOOR,COLX,BH,PW}=L;
+function plate(x,y,col,edge){g.fillStyle='#24262d';rr(x-PW/2,y-BH+1,PW,BH-2,4);g.fill();g.fillStyle=col;rr(x-PW/2,y-BH+1,14,BH-2,3);g.fill();rr(x+PW/2-14,y-BH+1,14,BH-2,3);g.fill();
+  g.fillStyle=edge;g.fillRect(x-PW/2+16,y-BH+3,PW-32,2);g.fillStyle='#0d0e11';rr(x-9,y-BH+BH*0.3,18,BH*0.4,3);g.fill();}
+function stack(x,val,col,edge,glowCol){
+  const n=val/PLATE,full=Math.floor(n);
+  g.fillStyle='#3a3d46';g.fillRect(x-4,FLOOR-Math.max(n,1)*BH-30,8,Math.max(n,1)*BH+30); // guide rod
+  if(n>0.3){const gr=g.createRadialGradient(x,FLOOR-n*BH/2,10,x,FLOOR-n*BH/2,130+n*8);gr.addColorStop(0,glowCol);gr.addColorStop(1,'rgba(0,0,0,0)');g.fillStyle=gr;g.fillRect(x-320,FLOOR-n*BH-320,640,n*BH+320);}
+  for(let i=0;i<full;i++)plate(x,FLOOR-i*BH,col,edge);
+  const f=n-full;if(f>0.04){g.save();g.globalAlpha=f;plate(x,FLOOR-full*BH,col,edge);g.restore();}
+}
+const dumbbell=(c)=>(hx,hy)=>{g.save();g.translate(hx,hy);g.fillStyle='#55596a';g.fillRect(-26,-5,52,10);g.fillStyle=c;rr(-34,-17,14,34,4);g.fill();rr(20,-17,14,34,4);g.fill();g.restore();};
+function tag(s,x,y,a,col){if(a<=0)return;const fs=WIDE?22:26;g.save();g.globalAlpha=a;g.font=`800 ${fs}px Inter`;const w=g.measureText(s).width+36,h=WIDE?42:48;
+  g.fillStyle='#14161b';g.strokeStyle=col;g.lineWidth=2.5;rr(x-w/2,y-h/2,w,h,h/2);g.fill();g.stroke();g.restore();text(s,x,y+1,fs,col,{weight:800,alpha:a});}
+
+function render(t){
+  // gym room
+  g.fillStyle='#08090c';g.fillRect(0,0,W,H);
+  g.fillStyle='#0e1015';g.fillRect(0,FLOOR,W,H-FLOOR);
+  for(let i=0;i<12;i++){g.fillStyle=i%2?'#0f1116':'#111319';g.fillRect(L.line[0]+i*(L.line[1]-L.line[0])/12,FLOOR+3,(L.line[1]-L.line[0])/12,WIDE?24:30);}
+  const sp=g.createRadialGradient(W/2,FLOOR-260,50,W/2,FLOOR-260,WIDE?900:820);sp.addColorStop(0,'rgba(255,255,255,.07)');sp.addColorStop(1,'rgba(255,255,255,0)');g.fillStyle=sp;g.fillRect(0,0,W,H);
+  g.fillStyle='#22252d';g.fillRect(L.line[0],FLOOR,L.line[1]-L.line[0],3);
+  const age=t<T0?A0:Math.min(A1,A0+(t-T0)/(T1-T0)*YRS), running=t>=T0&&t<T1, late=age>=LATE, done=t>=T1;
+  const intro=clamp((t-0.6)/0.4), tagOut=1-clamp((t-T0+0.3)/0.3);
+  const yr=(age-A0)%1;
+  // ---- MOTIVATED (waits) ----
+  {const x=COLX[0],cx=x-82,sx=x+82,v=balAt('m',age);
+    stack(sx,v,'#ff8a3d','#ffc79e','rgba(255,138,61,.22)');
+    let face='meh',armR=0.25,slump=0.55,hold=null;
+    if(late){slump=0;face=done?'sad':'meh';hold=dumbbell('#ff8a3d');armR=running?0.35+1.25*Math.max(0,Math.sin(yr*Math.PI*2)):0.3;}
+    if(running&&Math.abs(age-LATE)<1.2)face='shock';
+    stick(cx,FLOOR,{acc:'cap',face,armL:0.15,armR,slump,look:1,scale:L.sc,hold,bob:Math.sin(t*3)*2});
+    tag('MOTIVATED',cx+30,L.tag[0],clamp((t-1.0)/0.4)*tagOut,'#ff8a3d');
+    tag('Waits to “feel ready”',cx+30,L.tag[1],clamp((t-1.5)/0.4)*tagOut,'#ff8a3d');
+    tag('Starts at 35 · £200/mo',cx+30,L.tag[2],clamp((t-2.0)/0.4)*tagOut,'#ff8a3d');
+    const ba=clamp((t-T0-0.1)/0.3)*(1-clamp((age-33.5)/0.6));
+    if(ba>0)bubble(age<30?'Next year...':'Next year. Promise.',cx+60,L.bub[1]-(WIDE?0:20),ba);
+    if(running&&age>=LATE&&age<LATE+2.4)pop('FINALLY STARTS',x,L.pop,(age-LATE)/2.4,'#ff8a3d',34);
+    text(k(v),x,FLOOR+L.lab[0],L.fs[0],'#ff8a3d',{alpha:intro});
+    text('AT AGE '+Math.floor(age),x,FLOOR+L.lab[1],L.fs[1],'#ff8a3d',{spacing:3,alpha:intro});
+    text('Put in '+gbp(Math.max(0,Math.round((age-LATE)*12))*PM),x,FLOOR+L.lab[2],L.fs[2],'#8f95a6',{weight:700,spacing:1,alpha:intro});
+  }
+  // ---- DISCIPLINED (starts now) ----
+  {const x=COLX[1],cx=x-82,sx=x+82,v=balAt('d',age);
+    stack(sx,v,'#3ddc84','#c8f5d8','rgba(61,220,132,.25)');
+    const armR=running?0.35+1.25*Math.max(0,Math.sin(yr*Math.PI*2)):0.3;
+    stick(cx,FLOOR,{acc:'beanie',face:age>30||done?'happy':'meh',armL:0.15,armR,look:-1,scale:L.sc,hold:dumbbell('#3ddc84'),bob:Math.sin(t*4+1)*2});
+    tag('DISCIPLINED',cx+30,L.tag[0],clamp((t-2.6)/0.4)*tagOut,'#3ddc84');
+    tag('Doesn’t wait to feel ready',cx+30,L.tag[1],clamp((t-3.0)/0.4)*tagOut,'#3ddc84');
+    tag('Starts at 25 · £200/mo',cx+30,L.tag[2],clamp((t-3.4)/0.4)*tagOut,'#3ddc84');
+    if(running){const m5=Math.floor((age-A0)/5);const a5=((age-A0)/5-m5);if(m5>=1&&!(age>=LATE&&age<LATE+2.4))pop(k(balAt('d',A0+m5*5)),x,L.pop,a5*1.3,'#3ddc84',34);}
+    text(k(v),x,FLOOR+L.lab[0],L.fs[0],'#3ddc84',{alpha:intro});
+    text('AT AGE '+Math.floor(age),x,FLOOR+L.lab[1],L.fs[1],'#3ddc84',{spacing:3,alpha:intro});
+    text('Put in '+gbp(Math.round((age-A0)*12)*PM),x,FLOOR+L.lab[2],L.fs[2],'#8f95a6',{weight:700,spacing:1,alpha:intro});
+  }
+  // ---- the gap ----
+  const ga=clamp((t-T1-0.2)/0.3)*(1-clamp((t-END+0.2)/0.3));
+  if(ga>0){text('10 YEARS LATE =',W/2,L.ev[0],WIDE?40:46,'#fff',{stroke:8,sc:'#08090c',alpha:ga});
+    text(k(GAP)+' LESS',W/2,L.ev[1],WIDE?64:76,'#ffd23f',{stroke:10,sc:'#08090c',alpha:ga});}
+  // ---- header ----
+  const hA=1-clamp((t-END)/0.4);
+  if(hA>0){
+    text('HOW COMPOUND INTEREST',W/2,L.head[0],WIDE?62:66,'#fff',{alpha:hA*clamp(t/0.4)});
+    text('WORKS: 25 vs 35',W/2,L.head[1],WIDE?62:74,'#ffd23f',{alpha:hA*clamp((t-0.3)/0.4)});
+    if(t>=T0-0.3){const a=hA*clamp((t-T0+0.3)/0.3);
+      text('AGE',W/2-35,L.age,WIDE?28:30,'#9aa0b2',{align:'right',spacing:6,alpha:a});text(String(Math.floor(age)),W/2-15,L.age,WIDE?64:74,'#ffd23f',{align:'left',alpha:a});}
+  }
+  if(t>=END){const a=clamp((t-END-0.2)/0.4);
+    text("MOTIVATION WAITS.",W/2,L.end[0],L.es,'#fff',{alpha:a});
+    text("COMPOUNDING DOESN'T.",W/2,L.end[1],L.es,'#3ddc84',{alpha:clamp((t-END-0.6)/0.4)});
+    const c=clamp((t-END-1.2)/0.4),C=L.cta;
+    text('Follow Daily Money Motivation',C.tx,C.ty,C.ts,'#cfd3e0',{weight:700,alpha:c});
+    if(c>0){const pressed=t>END+2.4;g.save();g.globalAlpha=c;g.fillStyle=pressed?'#2a2d35':'#ffd23f';rr(...C.b);g.fill();g.restore();
+      text(pressed?'Following':'Follow',C.bx,C.by,C.bs,pressed?'#fff':'#111',{alpha:c});}
+    const d1='Illustration only: £200/month invested to 65, 7% a year growth compounded monthly,',d2='no fees or tax. Returns are not guaranteed. Not financial advice.';
+    if(WIDE)text(d1+' '+d2,W/2,L.disc,L.ds,'#6f7486',{weight:500,alpha:a});
+    else{text(d1,W/2,L.disc,L.ds,'#6f7486',{weight:500,alpha:a});text(d2,W/2,L.disc+28,L.ds,'#6f7486',{weight:500,alpha:a});}
+  }
+}
+window.render=render;render(0);
+</script></body></html>
