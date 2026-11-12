@@ -1,0 +1,107 @@
+<!doctype html><html><head><meta charset="utf-8"><style>html,body{margin:0;background:#000}canvas{display:block}</style></head><body>
+<canvas id="c" width="1080" height="1920"></canvas>
+<script>const WIDE=location.search.includes('wide');if(WIDE){const c=document.getElementById('c');c.width=1920;c.height=1080;}</script>
+<script src="common.js"></script>
+<script>
+// ===== "Emergency fund vs credit card: the same £800 boiler bill" — dark minimal style =====
+// Card: £800 at 24.9% APR (monthly rate APR/12), £30/month until cleared.
+// Fund: £800 pot pays the bill, then the SAME monthly payments go back into the pot.
+const BILL=800,APR=0.249,PAY=30;
+const SCHED=(()=>{let b=BILL,I=0,paid=0;const s=[{b,I,paid}];while(b>0.005){const i=b*APR/12;I+=i;b+=i;const p=Math.min(PAY,b);b-=p;paid+=p;s.push({b:Math.max(0,b),I,paid});}return s;})();
+const NM=SCHED.length-1, TOTI=SCHED[NM].I, TOTP=SCHED[NM].paid;   // 40 months, £377 interest, £1,177 paid
+console.assert(NM===40&&Math.round(TOTI)===377&&Math.round(TOTP)===1177,'numbers changed',NM,TOTI,TOTP);
+const TB=3.4,T0=5.4,T1=14.6,END=15.4,MT=(T1-T0)/NM;
+const L=WIDE?{FLOOR:800,COLX:[660,1260],BH:15,sc:0.8,head:[80,155],mon:235,tag:[300,350,400],pop:465,ev:330,lab:[70,122,156],fs:[60,24,20],
+  cta:{tx:860,ty:1018,ts:30,b:[1115,990,190,56,28],bx:1210,by:1019,bs:26},disc:1062,ds:15,end:[80,152],es:62,line:[300,1620]}
+ :{FLOOR:1300,COLX:[290,790],BH:28,sc:1.15,head:[250,335],mon:440,tag:[600,665,730],pop:805,ev:620,lab:[80,140,178],fs:[68,26,21],
+  cta:{tx:540,ty:1640,ts:34,b:[420,1676,240,66,33],bx:540,by:1709,bs:30},disc:1530,ds:20,end:[250,325],es:62,line:[60,960]};
+const {FLOOR,COLX,BH}=L;
+function bundle(x,y,w,col,band){g.fillStyle=col;rr(x-w/2,y-BH+1,w,BH-2,3);g.fill();g.fillStyle='rgba(255,255,255,.25)';g.fillRect(x-w/2+4,y-BH+3,w-8,2);g.fillStyle=band;g.fillRect(x-7,y-BH+1,14,BH-2);}
+function stack(x,val,col,band,glow,gc){
+  const n=val/100, full=Math.floor(n);
+  if(glow&&n>0){const gr=g.createRadialGradient(x,FLOOR-n*BH/2,10,x,FLOOR-n*BH/2,140+n*6);gr.addColorStop(0,gc+'.28)');gr.addColorStop(1,gc+'0)');g.fillStyle=gr;g.fillRect(x-300,FLOOR-n*BH-300,600,n*BH+300);}
+  for(let i=0;i<full;i++)bundle(x+(rand(i)-0.5)*4,FLOOR-i*BH,100,col,band);
+  const f=n-full;if(f>0.05){g.save();g.globalAlpha=f;bundle(x,FLOOR-full*BH,100,col,band);g.restore();}
+}
+function boiler(x,y,s,t){g.save();g.translate(x,y);g.scale(s,s);
+  g.fillStyle='#e9ebf0';rr(-50,-70,100,140,14);g.fill();g.fillStyle='#14161b';rr(-30,-48,60,26,5);g.fill();
+  text('ERR',0,-35,18,'#ff4d63',{weight:900});
+  g.fillStyle='#9aa0b2';g.fillRect(-30,70,10,26);g.fillRect(20,70,10,26);
+  const d=(t*1.6)%1;g.fillStyle='#4da3ff';g.globalAlpha=1-d;g.beginPath();g.arc(-25,100+d*40,7,0,7);g.fill();g.globalAlpha=1;
+  g.strokeStyle='#ff4d63';g.lineWidth=8;g.lineCap='round';g.beginPath();g.moveTo(-16,0);g.lineTo(16,32);g.moveTo(16,0);g.lineTo(-16,32);g.stroke();
+  g.restore();}
+function tag(s,x,y,a,col){if(a<=0)return;g.save();g.globalAlpha=a;g.font=`800 ${WIDE?22:26}px Inter`;const w=g.measureText(s).width+36,h=WIDE?42:48;
+  g.fillStyle='#14161b';g.strokeStyle=col;g.lineWidth=2.5;rr(x-w/2,y-h/2,w,h,h/2);g.fill();g.stroke();g.restore();text(s,x,y+1,WIDE?22:26,col,{weight:800,alpha:a});}
+function at(m){const i=Math.min(NM,Math.max(0,m)),k=Math.floor(i),f=i-k,a=SCHED[k],b=SCHED[Math.min(NM,k+1)];return {b:a.b+(b.b-a.b)*f,I:a.I+(b.I-a.I)*f,paid:a.paid+(b.paid-a.paid)*f};}
+
+function render(t){
+  g.fillStyle='#060709';g.fillRect(0,0,W,H);
+  const sp=g.createRadialGradient(W/2,FLOOR-240,50,W/2,FLOOR-240,WIDE?900:800);sp.addColorStop(0,'rgba(255,255,255,.07)');sp.addColorStop(1,'rgba(255,255,255,0)');g.fillStyle=sp;g.fillRect(0,0,W,H);
+  g.fillStyle='#1c1e24';g.fillRect(L.line[0],FLOOR,L.line[1],3);
+  const mF=clamp((t-T0)/(T1-T0))*NM, running=t>=T0&&t<T1, ph=((t-T0)/MT)%1, done=t>=T1, hit=t>=TB+0.6;
+  const s=at(mF), intro=clamp((t-0.6)/0.4), preTag=a=>a*(1-clamp((t-TB+0.2)/0.3));
+  // ---- NO FUND: bill goes on a card ----
+  {const x=COLX[0],cx=x-66,sx=x+78;
+    const owe=hit?(t<T0?BILL:s.b):0;
+    if(hit)stack(sx,owe,'#c9364f','#ffb3c0',true,'rgba(255,77,99,');
+    let face='meh',armR=0.2;
+    if(running&&ph<0.4)armR=1.1;
+    if(hit&&t<TB+1.8)face='shock'; else if(hit&&!done)face='sad';
+    stick(cx,FLOOR,{acc:'cap',face,armL:0.15,armR,look:1,scale:L.sc,bob:Math.sin(t*5)*2});
+    tag('NO EMERGENCY FUND',x,L.tag[1],preTag(clamp((t-1.2)/0.4)),'#ff7a90');
+    tag('£0 put aside',x,L.tag[2],preTag(clamp((t-1.6)/0.4)),'#ff7a90');
+    const runA=clamp((t-TB-0.9)/0.4)*(1-clamp((t-END+0.3)/0.3));
+    tag('24.9% APR card',x,L.tag[0],runA,'#ff7a90');
+    if(t>=TB+0.9)text('Interest so far: '+gbp(s.I),x,L.tag[1]+(WIDE?6:10),WIDE?24:28,'#ffb3c0',{weight:800,alpha:runA});
+    if(running&&ph<0.8)pop('-£30',x,L.pop,ph*1.4,'#ff4d63',34);
+    if(hit&&t<T0)pop('ON THE CARD',x,L.pop,(t-TB-0.7)/1.2,'#ff4d63',34);
+    const big=!hit?'£0':done?gbp(TOTI):gbp(owe), lab=!hit?'SAVED':done?'INTEREST PAID':'OWED';
+    text(big,x,FLOOR+L.lab[0],L.fs[0],'#ff4d63',{alpha:intro});
+    text(lab,x,FLOOR+L.lab[1],L.fs[1],'#ff4d63',{spacing:3,alpha:intro});
+    text(done?'£1,177 paid for an £800 bill':hit?'£30 a month to the bank':'Hopes nothing breaks',x,FLOOR+L.lab[2],L.fs[2],'#8f95a6',{weight:700,spacing:1,alpha:intro});
+  }
+  // ---- FUND: pays cash, refills with the same £30 ----
+  {const x=COLX[1],cx=x-66,sx=x+78;
+    const fund=!hit?BILL:(t<T0?0:s.paid);
+    stack(sx,fund,'#2fae63','#c8f5d8',true,'rgba(61,220,132,');
+    const fa=(t-TB-0.6)/0.6;
+    if(fa>0&&fa<1){g.save();g.globalAlpha=1-fa;for(let i=0;i<8;i++)bundle(sx+(W/2-sx)*eOut(fa),FLOOR-i*BH-fa*160,100,'#2fae63','#c8f5d8');g.restore();}
+    let face=hit&&t<TB+1.4?'meh':'happy',armR=running&&ph<0.3?0.9:0.2;
+    stick(cx,FLOOR,{acc:'beanie',face,armL:0.15,armR,look:-1,scale:L.sc,bob:Math.sin(t*4+1)*2});
+    tag('£800 EMERGENCY FUND',x,L.tag[1],preTag(clamp((t-2.0)/0.4)),'#3ddc84');
+    tag('Kept in easy-access savings',x,L.tag[2],preTag(clamp((t-2.4)/0.4)),'#3ddc84');
+    const runA=clamp((t-TB-0.9)/0.4)*(1-clamp((t-END+0.3)/0.3));
+    tag('Refills the fund',x,L.tag[0],runA,'#3ddc84');
+    if(t>=TB+0.9)text('Interest paid: £0',x,L.tag[1]+(WIDE?6:10),WIDE?24:28,'#c8f5d8',{weight:800,alpha:runA});
+    if(running&&ph<0.8)pop('+£30',x,L.pop,ph*1.4,'#3ddc84',34);
+    if(hit&&t<T0)pop('PAID IN CASH',x,L.pop,(t-TB-0.7)/1.2,'#3ddc84',34);
+    text(gbp(fund),x,FLOOR+L.lab[0],L.fs[0],'#3ddc84',{alpha:intro});
+    text(done?'IN THE FUND':'SAVED',x,FLOOR+L.lab[1],L.fs[1],'#3ddc84',{spacing:3,alpha:intro});
+    text(done?'Same £30 a month, paid to self':hit?'£30 a month back to the fund':'Ready for surprises',x,FLOOR+L.lab[2],L.fs[2],'#8f95a6',{weight:700,spacing:1,alpha:intro});
+  }
+  // ---- the bill ----
+  const ba=clamp((t-TB)/0.3)*(1-clamp((t-T0+0.5)/0.4));
+  if(ba>0){g.save();g.globalAlpha=ba;boiler(WIDE?W/2-330:W/2,WIDE?L.ev:L.ev-150,WIDE?0.7:0.85,t);g.restore();
+    text('£800 BOILER REPAIR',W/2+(WIDE?60:0),L.ev,WIDE?40:46,'#ffb020',{stroke:8,sc:'#060709',alpha:ba});}
+  // ---- header ----
+  const hA=1-clamp((t-END)/0.4);
+  if(hA>0){
+    text('SAME £800 BOILER BILL.',W/2,L.head[0],WIDE?66:70,'#fff',{alpha:hA*clamp(t/0.4)});
+    text('ONE HAD A FUND.',W/2,L.head[1],WIDE?66:70,'#ffd23f',{alpha:hA*clamp((t-0.3)/0.4)});
+    if(t>=T0-0.3){const mm=Math.max(1,Math.min(NM,Math.ceil(mF)));const a=hA*clamp((t-T0+0.3)/0.3);
+      text('MONTH',W/2-35,L.mon,WIDE?28:30,'#9aa0b2',{align:'right',spacing:6,alpha:a});text(String(mm),W/2-15,L.mon,WIDE?64:74,'#ffd23f',{align:'left',alpha:a});}
+  }
+  if(t>=END){const a=clamp((t-END-0.2)/0.4);
+    text("SAVE FOR IT FIRST,",W/2,L.end[0],L.es,'#fff',{alpha:a});
+    text("OR PAY INTEREST ON IT.",W/2,L.end[1],L.es,'#3ddc84',{alpha:clamp((t-END-0.6)/0.4)});
+    const c=clamp((t-END-1.2)/0.4),C=L.cta;
+    text('Follow Daily Money Motivation',C.tx,C.ty,C.ts,'#cfd3e0',{weight:700,alpha:c});
+    if(c>0){const pressed=t>END+2.4;g.save();g.globalAlpha=c;g.fillStyle=pressed?'#2a2d35':'#ffd23f';rr(...C.b);g.fill();g.restore();
+      text(pressed?'Following':'Follow',C.bx,C.by,C.bs,pressed?'#fff':'#111',{alpha:c});}
+    const d1='Illustration only: £800 at 24.9% APR, £30/month, interest monthly. Rates vary.',d2='Not financial advice.';
+    if(WIDE)text(d1+' '+d2,W/2,L.disc,L.ds,'#6f7486',{weight:500,alpha:a});
+    else{text(d1,W/2,L.disc,L.ds,'#6f7486',{weight:500,alpha:a});text(d2,W/2,L.disc+30,L.ds,'#6f7486',{weight:500,alpha:a});}
+  }
+}
+window.render=render;render(0);
+</script></body></html>
