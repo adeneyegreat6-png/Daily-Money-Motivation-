@@ -1,0 +1,128 @@
+<!doctype html><html><head><meta charset="utf-8"><style>html,body{margin:0;background:#000}canvas{display:block}</style></head><body>
+<canvas id="c" width="1080" height="1920"></canvas>
+<script>const WIDE=location.search.includes('wide');if(WIDE){const c=document.getElementById('c');c.width=1920;c.height=1080;}</script>
+<script src="common.js"></script>
+<script>
+// ===== "Money Management: Rich vs Middle Class vs Poor on Payday" — three-floor building =====
+// Same £2,000 take-home pay on every floor. Only the order of spending differs.
+const PAY=2000,M=12;
+const RICH_INV=400, RATE=0.07;         // invests £400 first, 7%/yr, monthly compounding, paid in at start of month
+const POOR_OVER=200, APR=0.229;        // spends £2,200 -> £200/month on a credit card at 22.9% APR
+function richBal(m){let b=0;for(let i=0;i<m;i++)b=(b+RICH_INV)*(1+RATE/12);return b;}
+function poorDebt(m){let d=0;for(let i=0;i<m;i++)d=d*(1+APR/12)+POOR_OVER;return d;}
+const RB=[],PD=[];for(let m=0;m<=M;m++){RB.push(richBal(m));PD.push(poorDebt(m));}
+// checks: rich 12 x 400 = 4,800 paid in -> 4,986; poor 12 x 200 = 2,400 borrowed -> 2,669 (269 interest)
+console.log('rich',RB[M],'poor',PD[M],'gap',RB[M]+PD[M]);
+const lerpArr=(A,m)=>{const i=Math.floor(m),f=m-i;return i>=M?A[M]:A[i]+(A[i+1]-A[i])*f;};
+
+const T_FLOW=4.3,T0=8.0,T1=14.4,END=15.4,MT=(T1-T0)/M;
+const L=WIDE?{bx:360,bw:1200,top:272,fh:234,sc:0.5,figx:120,lab:[30,19],tagx:[340,640,960],tagy:124,num:1150,numfs:60,sub:21,bar:[300,1110],tfs:22,popfs:30,
+   head:[58,124],hs:54,mon:190,end:[90],es:72,roof:46,
+   cta:{tx:860,ty:1018,ts:30,b:[1115,990,190,56,28],bx:1210,by:1019,bs:26},disc:1062,ds:15}
+ :{bx:40,bw:1000,top:545,fh:318,sc:0.62,figx:120,lab:[36,23],tagx:[590,590,590],tagy:[100,172,244],num:960,numfs:76,sub:23,bar:[250,950],tfs:30,popfs:38,
+   head:[250,335],hs:72,mon:445,end:[290],es:80,roof:70,
+   cta:{tx:540,ty:1665,ts:36,b:[420,1702,240,66,33],bx:540,by:1735,bs:30},disc:1565,ds:20};
+const FL=[ // top -> bottom
+ {name:'TOP FLOOR',who:'RICH HABITS',col:'#3ddc84',acc:'tie',tags:['1. Invest £400 first','2. Bills £1,200','3. Spend £400']},
+ {name:'MIDDLE FLOOR',who:'MIDDLE-CLASS HABITS',col:'#ffd23f',acc:'beanie',tags:['Bills £1,200','Car finance £350','Spend £450']},
+ {name:'GROUND FLOOR',who:'POOR HABITS',col:'#ff5a6e',acc:'cap',tags:['Spend £2,200','£2,000 pay','£200 on credit card']},
+];
+FL[2].tags=['Spend £2,200','Only £2,000 paid','£200 on a credit card'];
+function tag(s,x,y,a,col,fs){if(a<=0)return;fs=fs||(WIDE?21:26);g.save();g.globalAlpha=a;g.font=`800 ${fs}px Inter`;const w=g.measureText(s).width+34,h=fs*1.8;
+  g.fillStyle='#14161b';g.strokeStyle=col;g.lineWidth=2.5;rr(x-w/2,y-h/2,w,h,h/2);g.fill();g.stroke();g.restore();text(s,x,y+1,fs,col,{weight:800,alpha:a});}
+function payEnvelope(x,y,s,a){if(a<=0)return;g.save();g.globalAlpha=a;g.translate(x,y);g.scale(s,s);g.fillStyle='#f3e9cf';rr(-46,-30,92,60,6);g.fill();
+  g.strokeStyle='#b9a77a';g.lineWidth=3;g.beginPath();g.moveTo(-46,-28);g.lineTo(0,6);g.lineTo(46,-28);g.stroke();g.restore();
+  text('£2,000',x,y+14*s,20*s,'#2d6b45',{alpha:a});}
+
+function render(t){
+  g.fillStyle='#07080b';g.fillRect(0,0,W,H);
+  const {bx,bw,top,fh}=L, bot=top+3*fh;
+  const sp=g.createRadialGradient(W/2,top+fh*1.5,60,W/2,top+fh*1.5,WIDE?950:900);sp.addColorStop(0,'rgba(255,255,255,.06)');sp.addColorStop(1,'rgba(255,255,255,0)');g.fillStyle=sp;g.fillRect(0,0,W,H);
+  // roof
+  g.fillStyle='#1a1c23';g.beginPath();g.moveTo(bx-20,top);g.lineTo(bx+bw/2,top-L.roof);g.lineTo(bx+bw+20,top);g.closePath();g.fill();
+  // ground
+  g.fillStyle='#22252d';g.fillRect(0,bot,W,4);
+  const mF=clamp((t-T0)/(T1-T0))*M, running=t>=T0&&t<T1, ph=((t-T0)/MT)%1;
+  for(let f=0;f<3;f++){
+    const F=FL[f],y=top+f*fh,cx=bx+L.figx,feet=y+fh-16;
+    const ap=clamp((t-0.5-f*0.25)/0.4);
+    g.save();g.globalAlpha=ap;
+    g.fillStyle=f===0?'#10131a':f===1?'#0f1117':'#0e0f14';g.fillRect(bx,y,bw,fh);
+    g.strokeStyle='#2a2d36';g.lineWidth=4;g.strokeRect(bx,y,bw,fh);
+    g.fillStyle=F.col;g.fillRect(bx,y,8,fh);
+    g.restore();
+    g.save();g.font=`900 ${L.lab[1]}px Inter`;if('letterSpacing' in g)g.letterSpacing='2px';const ww=g.measureText(F.who).width;g.restore();
+    text(F.who,bx+bw-24,y+L.lab[0],L.lab[1],F.col,{align:'right',weight:900,spacing:2,alpha:ap});
+    text(F.name+'  ·',bx+bw-24-ww-12,y+L.lab[0],L.lab[1],'#8f95a6',{align:'right',weight:800,spacing:2,alpha:ap});
+    // pay envelope drop each payday
+    const dropAt=(k)=>T_FLOW-1.6+f*0.15;
+    let face='meh',armR=0.2;
+    // intro drop
+    const d0=(t-(2.2+f*0.2))/0.6;
+    if(d0>0&&d0<1.4){payEnvelope(cx+90,y+30+eOut(clamp(d0))*(fh*0.45),WIDE?0.8:1,1-clamp((d0-1)/0.4));}
+    if(d0>0.6&&t<T_FLOW)face='happy',armR=1.3;
+    // monthly drops
+    if(running){const a=ph<0.35?ph/0.35:1; if(ph<0.6)payEnvelope(cx+90,y+30+eOut(a)*(fh*0.4),WIDE?0.65:0.8,1-clamp((ph-0.45)/0.15));if(ph<0.4)armR=1.1;}
+    // faces over time
+    if(f===0&&mF>2)face='happy';
+    if(f===1&&t>T0)face='meh';
+    if(f===2&&t>T0+1)face=mF>8?'shock':'sad';
+    if(t>=T1){face=f===0?'cool':f===1?'meh':'sad';}
+    stick(cx,feet,{acc:F.acc,face,armL:0.15,armR,look:1,scale:L.sc,bob:Math.sin(t*4+f)*2});
+    // flow tags (where the pay goes)
+    const tA=(i)=>clamp((t-T_FLOW-f*0.75-i*0.25)/0.3)*(1-clamp((t-T0+0.2)/0.3));
+    for(let i=0;i<3;i++){
+      const tx=WIDE?bx+L.tagx[i]:bx+L.tagx[i], ty=WIDE?y+L.tagy:y+L.tagy[i];
+      tag(F.tags[i],tx,ty,tA(i),i===0&&f===0?'#3ddc84':(f===2&&i===2?'#ff5a6e':'#cfd3e0'),L.tfs);
+      if(WIDE&&i<2&&tA(i+1)>0)text('→',bx+(L.tagx[i]+L.tagx[i+1])/2,y+L.tagy,26,'#6f7486',{alpha:tA(i+1)});
+    }
+    // balance phase
+    const bA=clamp((t-T0+0.2)/0.3);
+    if(bA>0){
+      let val,lab,col=F.col;
+      if(f===0){val=lerpArr(RB,mF);lab='INVESTED';}
+      else if(f===1){val=0;lab='SAVED · car loses value';}
+      else{val=-lerpArr(PD,mF);lab='CREDIT CARD DEBT';}
+      const nx=bx+L.num, ny=WIDE?y+fh*0.5:y+fh*0.45;
+      text(gbp(val),nx-(WIDE?0:0),ny,L.numfs,col,{align:'right',alpha:bA});
+      text(lab,nx,ny+(WIDE?46:56),L.sub,'#8f95a6',{align:'right',weight:800,spacing:2,alpha:bA});
+      // bar
+      const by=WIDE?y+fh-46:y+fh-50, bl=L.bar[0], br=WIDE?bx+780:bx+L.bar[1]-0;
+      const x0=bx+L.bar[0], maxW=(WIDE?560:560);
+      g.save();g.globalAlpha=bA;g.fillStyle='#1d2028';rr(x0,by,maxW,16,8);g.fill();
+      const frac=Math.min(1,Math.abs(val)/5000);g.fillStyle=col;if(frac>0.01){rr(x0,by,maxW*frac,16,8);g.fill();}g.restore();
+      const px=bx+L.figx+(WIDE?260:250),py=y+fh*0.42;
+      if(running&&f===0)pop('+£400',px,py,ph*1.5,'#3ddc84',L.popfs);
+      if(running&&f===2)pop('+£200 debt',px,py,ph*1.5,'#ff5a6e',L.popfs);
+      if(running&&f===1)pop('£0 left',px,py,ph*1.5,'#ffd23f',L.popfs);
+    }
+  }
+  // final callout on the results
+  if(t>=T1&&t<END+3){const a=clamp((t-T1-0.2)/0.3);
+    const y0=top+fh*0+fh*0.45, y2=top+fh*2+fh*0.45;
+    if(a>0){pop('+£186 GROWTH',bx+bw*(WIDE?0.5:0.4),top+fh*0.4,clamp((t-T1-0.2)/1.4)*0.7,'#3ddc84',WIDE?30:34);
+      pop('+£269 INTEREST',bx+bw*(WIDE?0.5:0.4),top+fh*2.4,clamp((t-T1-0.4)/1.4)*0.7,'#ff5a6e',WIDE?30:34);}
+  }
+  // ---- header ----
+  const hA=1-clamp((t-END)/0.4);
+  if(hA>0){
+    text('SAME £2,000 PAYDAY.',W/2,L.head[0],L.hs,'#fff',{alpha:hA*clamp(t/0.4)});
+    text('3 DIFFERENT FLOORS.',W/2,L.head[1],L.hs,'#ffd23f',{alpha:hA*clamp((t-0.3)/0.4)});
+    if(t>=T0-0.3){const mm=Math.max(1,Math.min(M,Math.ceil(mF)));const a=hA*clamp((t-T0+0.3)/0.3);
+      text('PAYDAY',W/2-30,L.mon,WIDE?26:30,'#9aa0b2',{align:'right',spacing:6,alpha:a});text(String(mm)+(mm===12?' (1 YEAR)':''),W/2-10,L.mon,WIDE?50:64,'#ffd23f',{align:'left',alpha:a});}
+    else{const a=hA*clamp((t-1.2)/0.4)*(1-clamp((t-T0+0.6)/0.3));
+      text('Only the ORDER is different',W/2,L.mon,WIDE?28:34,'#9aa0b2',{weight:700,alpha:a});}
+  }
+  if(t>=END){const a=clamp((t-END-0.2)/0.4);
+    text('PAY YOURSELF FIRST.',W/2,L.end[0],L.es,'#3ddc84',{alpha:a});
+    const c=clamp((t-END-1.2)/0.4),C=L.cta;
+    text('Follow Daily Money Motivation',C.tx,C.ty,C.ts,'#cfd3e0',{weight:700,alpha:c});
+    if(c>0){const pressed=t>END+2.4;g.save();g.globalAlpha=c;g.fillStyle=pressed?'#2a2d35':'#ffd23f';rr(...C.b);g.fill();g.restore();
+      text(pressed?'Following':'Follow',C.bx,C.by,C.bs,pressed?'#fff':'#111',{alpha:c});}
+    const d1='Illustration only: £2,000/month take-home, 7%/yr growth, 22.9% APR card, 12 months.',d2='Not financial advice.';
+    if(WIDE)text(d1+' '+d2,W/2,L.disc,L.ds,'#6f7486',{weight:500,alpha:a});
+    else{text(d1,W/2,L.disc,L.ds,'#6f7486',{weight:500,alpha:a});text(d2,W/2,L.disc+30,L.ds,'#6f7486',{weight:500,alpha:a});}
+  }
+}
+window.render=render;render(0);
+</script></body></html>
