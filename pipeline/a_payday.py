@@ -13,7 +13,7 @@ for m in range(12):
 add(thud(),T1+0.1,0.9); add(whoosh(0.5),T1+0.1,0.5)
 for f_ in (1046,1318,1568): add(ping(f_),T1+0.25,0.14)
 add(whoosh(0.6),END,0.6); add(thud(),END+0.3,0.5)
-add(ping(2093),END+1.2,0.2); add(ping(2637),END+2.4,0.25)
+add(ping(2093),END+1.2,0.2); add(ping(2637),END+2.4,0.25); add(ping(3136),END+3.0,0.2)
 fade=np.ones(N); fi=int(0.3*SR); fo=int(1.2*SR)
 fade[:fi]=np.linspace(0,1,fi); fade[-fo:]=np.linspace(1,0,fo)
 mix*=fade
