@@ -1,0 +1,149 @@
+<!doctype html><html><head><meta charset="utf-8"><style>html,body{margin:0;background:#000}canvas{display:block}</style></head><body>
+<canvas id="c" width="1080" height="1920"></canvas>
+<script>const WIDE=location.search.includes('wide');if(WIDE){const c=document.getElementById('c');c.width=1920;c.height=1080;}</script>
+<script src="common.js"></script>
+<script>
+// ===== "Saving Money Tips: 5 Small Leaks Costing You £3,000 a Year" — pipes & barrels =====
+// One savings barrel, five small holes. Each leak is a common everyday spend, costed for a year.
+const LEAKS=[
+ {name:'COFFEE · £3.50 x4 a week', yr:3.50*4*52},   // 728
+ {name:'TAKEAWAY · £18 a week',    yr:18*52},        // 936
+ {name:'IMPULSE BUYS · £15 a week',yr:15*52},        // 780
+ {name:'SUBSCRIPTIONS · £26/month',yr:26*12},      // 312
+ {name:'OLD PHONE DEAL · £22/month',yr:22*12},     // 264 (overpaying out of contract)
+];
+const TOTAL=LEAKS.reduce((a,l)=>a+l.yr,0), FIVE=TOTAL*5;
+console.log(LEAKS.map(l=>l.yr),'total',TOTAL,'5yr',FIVE); // 728,936,780,312,264 -> 3020 ; 15100
+if(Math.round(TOTAL)!==3020||Math.round(FIVE)!==15100)throw new Error('numbers changed');
+
+const OPEN=[3.8,5.0,6.2,7.4,8.6], PLUG=[10.4,11.2,12.0,12.8,13.6], T1=14.4, END=15.4;
+const L=WIDE?{bxc:960,bw:270,btop:350,floor:860,holeY:[430,510,590,670,750],side:[-1,1,-1,1,-1],lgap:34,nfs:22,afs:34,
+   pipeY:262,pipeW:44,pipeLab:330,figx:1560,sc:0.5,head:[58,124],hs:54,sub:192,subfs:28,cnt:[915,958],cfs:36,c2fs:28,
+   end:[[90,'PLUG THE SMALL LEAKS.']],es:66,
+   cta:{txt:'Subscribe for a new money habit every day',tx:735,ty:1018,ts:30,btn:[{x:1205,y:1018,w:230,h:58,on:'Subscribe',off:'Subscribed',col:'#ff2d3d',fg:'#fff',at:2.4,bell:true}],bs:26},disc:1062,ds:15}
+ :{bxc:540,bw:270,btop:800,floor:1400,holeY:[880,980,1080,1180,1280],side:[-1,1,-1,1,-1],lgap:30,nfs:24,afs:40,
+   pipeY:540,pipeW:50,pipeLab:250,figx:960,sc:0.55,head:[250,335],hs:72,sub:445,subfs:34,cnt:[1470,1530],cfs:44,c2fs:34,
+   end:[[250,'PLUG THE'],[335,'SMALL LEAKS.']],es:76,
+   cta:{txt:'Subscribe & follow Daily Money Motivation',tx:540,ty:1680,ts:36,btn:[{x:395,y:1765,w:270,h:68,on:'Subscribe',off:'Subscribed',col:'#ff2d3d',fg:'#fff',at:2.4,bell:true},{x:705,y:1765,w:230,h:68,on:'Follow',off:'Following',col:'#ffd23f',fg:'#111',at:3.0}],bs:30},disc:1595,ds:20};
+
+function bell(x,y,s,age,a){g.save();g.globalAlpha=a;g.translate(x,y);g.rotate(Math.sin(age*18)*0.35*Math.max(0,1-age/0.9));g.fillStyle='#ffd23f';
+  g.beginPath();g.moveTo(-s*0.45,s*0.3);g.quadraticCurveTo(-s*0.4,-s*0.5,0,-s*0.5);g.quadraticCurveTo(s*0.4,-s*0.5,s*0.45,s*0.3);g.closePath();g.fill();
+  g.beginPath();g.arc(0,s*0.42,s*0.13,0,7);g.fill();g.restore();}
+function shade(c){const n=parseInt(c.slice(1),16);return `rgb(${((n>>16)*0.62)|0},${(((n>>8)&255)*0.62)|0},${((n&255)*0.62)|0})`;}
+function wall(){
+  const grd=g.createLinearGradient(0,0,0,H);grd.addColorStop(0,'#15171c');grd.addColorStop(0.7,'#23262d');grd.addColorStop(1,'#101114');
+  g.fillStyle=grd;g.fillRect(0,0,W,H);
+  g.strokeStyle='rgba(0,0,0,.32)';g.lineWidth=3;const bh=WIDE?110:150,bwid=WIDE?200:220;
+  for(let r=0;r*bh<L.floor;r++){const y=r*bh;g.beginPath();g.moveTo(0,y);g.lineTo(W,y);g.stroke();
+    for(let x=(r%2)*bwid/2;x<W;x+=bwid){g.beginPath();g.moveTo(x,y);g.lineTo(x,y+bh);g.stroke();}}
+  const fg=g.createLinearGradient(0,L.floor,0,H);fg.addColorStop(0,'#2a2c32');fg.addColorStop(1,'#08090b');g.fillStyle=fg;g.fillRect(0,L.floor,W,H-L.floor);
+  g.fillStyle='rgba(255,255,255,.08)';g.fillRect(0,L.floor,W,3);
+  const hb=g.createLinearGradient(0,0,0,WIDE?230:520);hb.addColorStop(0,'rgba(8,9,12,.95)');hb.addColorStop(1,'rgba(8,9,12,0)');g.fillStyle=hb;g.fillRect(0,0,W,WIDE?230:520);
+}
+function pipe(){ // horizontal from left edge, then elbow down into barrel mouth
+  const col='#2fd3a8',x=L.bxc,y=L.pipeY,w=L.pipeW,yb=L.btop-18;
+  g.fillStyle='rgba(0,0,0,.35)';g.fillRect(0,y-w/2+8,x,w);g.fillRect(x-w/2+8,y,w,yb-y);
+  let gr=g.createLinearGradient(0,y-w/2,0,y+w/2);gr.addColorStop(0,col);gr.addColorStop(0.3,'#ffffff55');gr.addColorStop(0.31,col);gr.addColorStop(1,shade(col));
+  g.fillStyle=gr;g.fillRect(0,y-w/2,x+w/2,w);
+  gr=g.createLinearGradient(x-w/2,0,x+w/2,0);gr.addColorStop(0,col);gr.addColorStop(0.35,'#ffffff55');gr.addColorStop(0.36,col);gr.addColorStop(1,shade(col));
+  g.fillStyle=gr;g.fillRect(x-w/2,y,w,yb-y);
+  g.fillStyle=shade(col);rr(x-w/2-8,yb-24,w+16,24,6);g.fill();for(const xx of [WIDE?120:80,x-140]){rr(xx,y-w/2-8,24,w+16,6);g.fill();}
+  g.fillStyle='#111';g.beginPath();g.ellipse(x,yb,w/2,8,0,0,7);g.fill();
+}
+function pillTag(s,x,y,col,fs,a=1){if(a<=0)return;g.save();g.globalAlpha=a;g.font=`900 ${fs}px ${F}`;const w=g.measureText(s).width+fs*1.3,h=fs*1.7;
+  g.fillStyle='#fff';rr(x-w/2,y-h/2,w,h,h/2);g.fill();g.strokeStyle=col;g.lineWidth=5;rr(x-w/2,y-h/2,w,h,h/2);g.stroke();g.restore();text(s,x,y+1,fs,'#16171b',{alpha:a});}
+function barrel(fill,t){
+  const x=L.bxc,w=L.bw,top=L.btop,h=L.floor-top;
+  g.fillStyle='rgba(0,0,0,.35)';g.beginPath();g.ellipse(x+10,L.floor,w*0.62,16,0,0,7);g.fill();
+  g.fillStyle='#3a3d45';rr(x-w/2,top,w,h,22);g.fill();
+  const wx=x-w*0.2,wy=top+44,ww=w*0.4,wh=h-(WIDE?110:124);
+  g.fillStyle='#14151a';rr(wx,wy,ww,wh,14);g.fill();
+  const fh=wh*clamp(fill);
+  if(fh>0){g.save();rr(wx,wy,ww,wh,14);g.clip();const gg=g.createLinearGradient(0,wy+wh-fh,0,wy+wh);gg.addColorStop(0,'#ffe066');gg.addColorStop(1,'#d39a0b');g.fillStyle=gg;g.fillRect(wx,wy+wh-fh,ww,fh);
+    g.fillStyle='rgba(255,255,255,.28)';g.fillRect(wx,wy+wh-fh,ww,4);g.restore();}
+  g.strokeStyle='rgba(255,255,255,.18)';g.lineWidth=3;rr(wx,wy,ww,wh,14);g.stroke();
+  g.fillStyle='#2b2d33';for(const yy of [top+20,top+h-34])g.fillRect(x-w/2,yy,w,12);
+  g.fillStyle='rgba(255,255,255,.07)';rr(x-w/2+14,top+12,18,h-24,9);g.fill();
+  g.fillStyle='#4a4e58';g.beginPath();g.ellipse(x,top,w/2,26,0,0,7);g.fill();
+  g.fillStyle='#121317';g.beginPath();g.ellipse(x,top,w/2-12,18,0,0,7);g.fill();
+  text('SAVINGS',x,top+h-(WIDE?50:56),WIDE?20:24,'#9aa0b2',{weight:900,spacing:3});
+}
+// barrel level: fills a little, drains as leaks open, refills once plugged
+function level(t){
+  if(t<OPEN[0])return 0.08+0.30*clamp(t/OPEN[0]);
+  if(t<PLUG[0])return 0.38-0.33*clamp((t-OPEN[0])/(PLUG[0]-0.4-OPEN[0]));
+  return 0.05+0.85*eOut(clamp((t-PLUG[0])/(T1+0.4-PLUG[0])));
+}
+function holeXY(i){const s=L.side[i];return [L.bxc+s*(L.bw/2-4),L.holeY[i]];}
+
+function render(t){
+  g.clearRect(0,0,W,H);wall();
+  pipe();
+  pillTag('YOUR SPARE CASH',L.pipeLab,L.pipeY,'#2fd3a8',WIDE?20:24,clamp((t-0.3)/0.4));
+  // inflow coins (pipe mouth -> barrel)
+  for(let k=0;k<400;k++){const st=0.2+k*0.11,age=t-st;if(age<0)break;if(age>0.45)continue;
+    const y0=L.btop-18,y1=L.btop+30;coin(L.bxc+(rand(k)-0.5)*20,y0+(y1-y0)*eIn(age/0.45),WIDE?11:14,k+t*8);}
+  barrel(level(t),t);
+  // holes, spurts, plugs, labels
+  let leaking=0,kept=0;
+  for(let i=0;i<5;i++){
+    const [hx,hy]=holeXY(i),s=L.side[i],o=t-OPEN[i],p=t-PLUG[i],R=WIDE?11:14;
+    if(o<0)continue;
+    const plugged=p>=0;
+    g.fillStyle='#0a0a0c';g.beginPath();g.ellipse(hx,hy,R*0.8,R*1.2,0,0,7);g.fill();
+    if(!plugged){ // coin spurt: short arcs that fade
+      for(let k=0;k<12;k++){const age=((t-OPEN[i])-k*0.09)%1.08;if(t-OPEN[i]<k*0.09)continue;const q=age/0.55;if(q>1)continue;
+        const cx=hx+s*(10+q*(WIDE?70:85)),cy=hy+q*q*(WIDE?60:75)-Math.sin(q*Math.PI)*12;
+        g.save();g.globalAlpha=1-clamp((q-0.6)/0.4);coin(cx,cy,WIDE?9:11,k+t*10);g.restore();}
+      leaking+=LEAKS[i].yr*clamp(o/0.6);
+    }else{ // cork
+      const k=back(clamp(p/0.25));g.save();g.translate(hx+s*6,hy);g.scale(k,k);g.fillStyle='#b07a43';rr(-R*0.9+s*4,-R*1.2,R*1.8,R*2.4,6);g.fill();
+      g.fillStyle='#8a5a2c';g.fillRect(-R*0.9+s*4,-R*0.2,R*1.8,4);g.restore();
+      kept+=LEAKS[i].yr*clamp(p/0.5);
+    }
+    // label above hole, outside barrel
+    const a=clamp(o/0.3),ax=hx+s*L.lgap,al=s<0?'right':'left';
+    text(LEAKS[i].name,ax,hy-(WIDE?56:66),L.nfs,'#cfd3e0',{weight:800,align:al,alpha:a});
+    const amt=plugged?gbp(LEAKS[i].yr)+' KEPT':gbp(LEAKS[i].yr)+' a year';
+    text(amt,ax,hy-(WIDE?24:28),L.afs,plugged?'#3ddc84':'#ff5a6e',{align:al,stroke:7,sc:'#111',alpha:a});
+    if(o>=0&&o<1)pop('LEAK!',hx+s*(WIDE?70:85),hy+(WIDE?55:66),o,'#ff5a6e',WIDE?26:32);
+    if(p>=0&&p<1)pop('PLUGGED',hx+s*(WIDE?80:95),hy+(WIDE?55:66),p,'#3ddc84',WIDE?26:32);
+  }
+  if(t>=PLUG[0])leaking=0;
+  // character
+  let face='happy',armR=0.25;
+  if(t>OPEN[0]+0.3)face='shock',armR=2.4;
+  if(t>OPEN[2]+0.3&&t<PLUG[0])face='sad',armR=0.2;
+  if(t>=PLUG[0]-0.3){face='happy';armR=((t-PLUG[0])%0.8)<0.35&&t<T1?1.6:0.5;}
+  if(t>=T1)face='cool',armR=2.7;
+  stick(L.figx,L.floor,{acc:'beanie',face,armL:0.2,armR,look:-1,scale:L.sc,bob:Math.sin(t*4)*2});
+  // counters under the floor
+  const hA=1-clamp((t-END)/0.4);
+  if(t>=OPEN[0]&&t<PLUG[0]&&hA>0){text('LEAKING: '+gbp(leaking)+' A YEAR',W/2,L.cnt[0],L.cfs,'#ff5a6e',{stroke:8,sc:'#111',alpha:clamp((t-OPEN[0])/0.3)*(1-clamp((t-PLUG[0]+0.3)/0.3))});}
+  if(t>=PLUG[0]-0.1){text('KEPT: '+gbp(kept)+' A YEAR',W/2,L.cnt[0],L.cfs,'#3ddc84',{stroke:8,sc:'#111',alpha:clamp((t-PLUG[0]+0.1)/0.3)});}
+  if(t>=T1){const a=clamp((t-T1)/0.3);text('5 YEARS: '+gbp(FIVE)+' YOU KEEP',W/2,L.cnt[1],L.c2fs,'#ffd23f',{stroke:7,sc:'#111',alpha:a});
+    if(t<T1+1.2)pop('+'+gbp(FIVE),L.bxc,L.btop+120,(t-T1)/1.2,'#ffd23f',WIDE?40:52);}
+  // header
+  if(hA>0){
+    text('5 SMALL LEAKS.',W/2,L.head[0],L.hs,'#fff',{stroke:10,sc:'#111',alpha:hA*clamp(t/0.4)});
+    text(gbp(TOTAL)+' A YEAR GONE.',W/2,L.head[1],L.hs,'#ffd23f',{stroke:10,sc:'#111',alpha:hA*clamp((t-0.3)/0.4)});
+    const sub=t<OPEN[0]?'Same pay every month. Why is the barrel empty?':t<PLUG[0]?'Spot the leaks':'Now plug them, one by one';
+    const sa=t<OPEN[0]?clamp((t-1.0)/0.4)*(1-clamp((t-OPEN[0]+0.3)/0.3)):t<PLUG[0]?clamp((t-OPEN[0])/0.3)*(1-clamp((t-PLUG[0]+0.3)/0.3)):clamp((t-PLUG[0])/0.3);
+    text(sub,W/2,L.sub,L.subfs,'#9aa0b2',{weight:700,alpha:hA*sa});
+  }
+  if(t>=END){const a=clamp((t-END-0.2)/0.4);
+    L.end.forEach(([y,s],i)=>text(s,W/2,y,L.es,i===L.end.length-1?'#3ddc84':'#fff',{stroke:10,sc:'#111',alpha:clamp((t-END-0.2-i*0.3)/0.4)}));
+    const c=clamp((t-END-1.2)/0.4),C=L.cta;
+    text(C.txt,C.tx,C.ty,C.ts,'#cfd3e0',{weight:700,alpha:c});
+    if(c>0)for(const B of C.btn){const pressed=t>END+B.at,k=clamp((t-END-B.at)/0.15),sq=1-0.08*Math.sin(Math.PI*k);
+      g.save();g.globalAlpha=c;g.translate(B.x,B.y);g.scale(sq,sq);g.fillStyle=pressed?'#2a2d35':B.col;rr(-B.w/2,-B.h/2,B.w,B.h,B.h/2);g.fill();g.restore();
+      const lx=B.bell&&pressed?B.x+14:B.x;
+      text(pressed?B.off:B.on,lx,B.y+1,C.bs*sq,pressed?'#fff':B.fg,{alpha:c});
+      if(B.bell&&pressed)bell(B.x-B.w/2+34,B.y,C.bs*0.9,t-END-B.at,c);}
+    const d1='Illustration only: example everyday costs (52 weeks, 12 months), no interest or inflation.',d2='Not financial advice.';
+    if(WIDE)text(d1+' '+d2,W/2,L.disc,L.ds,'#6f7486',{weight:500,alpha:a});
+    else{text(d1,W/2,L.disc,L.ds,'#6f7486',{weight:500,alpha:a});text(d2,W/2,L.disc+30,L.ds,'#6f7486',{weight:500,alpha:a});}
+  }
+}
+window.render=render;render(0);
+</script></body></html>

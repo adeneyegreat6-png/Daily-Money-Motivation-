@@ -8,4 +8,4 @@ Mark a topic [x] with the date once it is posted. When all are done, research ne
 - [x] 2026-11-11 How Compound Interest Works: Start at 25 vs 35 (gym motivated-vs-disciplined) — compound.html
 - [x] 2026-11-12 Emergency Fund vs Credit Card: The Same £800 Boiler Bill (dark minimal) — efund.html
 - [x] 2026-11-13 Money Management: Rich vs Middle Class vs Poor on Payday (three-floor building) — payday.html
-- [ ] Saving Money Tips: 5 Small Leaks Costing You £3,000 a Year (pipes & barrels)
+- [x] 2026-11-14 Saving Money Tips: 5 Small Leaks Costing You £3,000 a Year (pipes & barrels) — leaks.html
