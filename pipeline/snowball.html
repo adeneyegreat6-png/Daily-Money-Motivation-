@@ -1,0 +1,140 @@
+<!doctype html><html><head><meta charset="utf-8"><style>html,body{margin:0;background:#000}canvas{display:block}</style></head><body>
+<canvas id="c" width="1080" height="1920"></canvas>
+<script>const WIDE=location.search.includes('wide');if(WIDE){const c=document.getElementById('c');c.width=1920;c.height=1080;}</script>
+<script src="common.js"></script>
+<script>
+// ===== "How to Get Out of Debt: The Debt Snowball Method" — boss battle style =====
+// Three debt bosses. Pay every minimum, throw the extra £150 at the SMALLEST, then roll each freed payment onward.
+const DEBTS=[
+ {name:'STORE CARD', bal:450, apr:0.299,min:25, col:'#ff7a45'},
+ {name:'CREDIT CARD',bal:1800,apr:0.249,min:55, col:'#e8394f'},
+ {name:'CAR LOAN',   bal:3200,apr:0.099,min:110,col:'#8f5bff'},
+];
+const EXTRA=150, MINS=DEBTS.reduce((a,d)=>a+d.min,0), BUDGET=MINS+EXTRA, TOTAL=DEBTS.reduce((a,d)=>a+d.bal,0);
+// monthly simulation: interest accrues, minimums paid, leftover budget goes to smallest balance still open
+function sim(budget,snow){const b=DEBTS.map(d=>d.bal),hist=[b.slice()],paid=[0,0,0];let m=0,int=0;
+  while(b.some(x=>x>0.005)&&m<600){m++;
+    DEBTS.forEach((d,i)=>{if(b[i]>0){const it=b[i]*d.apr/12;b[i]+=it;int+=it;}});
+    let av=budget;DEBTS.forEach((d,i)=>{if(b[i]>0){const p=Math.min(d.min,b[i]);b[i]-=p;av-=p;}});
+    if(snow)for(let i=0;i<3;i++){if(b[i]>0&&av>0){const p=Math.min(av,b[i]);b[i]-=p;av-=p;}}
+    for(let i=0;i<3;i++){if(b[i]<0.005)b[i]=0;if(b[i]===0&&!paid[i])paid[i]=m;}hist.push(b.slice());}
+  return {m,int,hist,paid};}
+const MINONLY=sim(MINS,false), SNOW=sim(BUDGET,true), SAVED=MINONLY.int-SNOW.int;
+console.log('mins',MINS,'budget',BUDGET,'total',TOTAL,'minOnly',MINONLY.m,Math.round(MINONLY.int),'snow',SNOW.m,SNOW.paid,Math.round(SNOW.int),'saved',Math.round(SAVED));
+if(MINS!==190||BUDGET!==340||TOTAL!==5450||MINONLY.m!==56||SNOW.m!==18||SNOW.paid.join()!=='3,12,18'||Math.round(MINONLY.int)!==1873||Math.round(SNOW.int)!==621||Math.round(SAVED)!==1252)throw new Error('numbers changed');
+const ATTACK=[DEBTS[0].min+EXTRA, DEBTS[0].min+EXTRA+DEBTS[1].min, BUDGET]; // 175, 230, 340
+
+const T0=5.0,MT=0.5,T1=T0+SNOW.m*MT,END=15.4; // T1=14.0
+const tm=m=>T0+m*MT;
+const L=WIDE?{bx:[560,960,1360],by:490,br:[56,74,92],hp:[240,272],hpw:240,nfs:22,bfs:30,floor:860,figx:960,sc:0.55,
+   head:[58,124],hs:54,sub:192,subfs:28,atk:640,afs:26,cnt:[915,958],cfs:36,c2fs:28,mon:[1640,272],mfs:34,
+   end:[[90,'SMALLEST DEBT FIRST. THEN ROLL IT.']],es:58,
+   cta:{txt:'Subscribe for a new money habit every day',tx:735,ty:1018,ts:30,btn:[{x:1205,y:1018,w:230,h:58,on:'Subscribe',off:'Subscribed',col:'#ff2d3d',fg:'#fff',at:2.4,bell:true}],bs:26},disc:1062,ds:15}
+ :{bx:[200,540,880],by:960,br:[70,94,116],hp:[600,640],hpw:250,nfs:24,bfs:34,floor:1420,figx:540,sc:0.62,
+   head:[250,335],hs:72,sub:445,subfs:34,atk:1112,afs:30,cnt:[1490,1545],cfs:42,c2fs:34,mon:[540,525],mfs:40,
+   end:[[250,'SMALLEST DEBT'],[335,'FIRST. THEN ROLL IT.']],es:70,
+   cta:{txt:'Subscribe & follow Daily Money Motivation',tx:540,ty:1680,ts:36,btn:[{x:395,y:1765,w:270,h:68,on:'Subscribe',off:'Subscribed',col:'#ff2d3d',fg:'#fff',at:2.4,bell:true},{x:705,y:1765,w:230,h:68,on:'Follow',off:'Following',col:'#ffd23f',fg:'#111',at:3.0}],bs:30},disc:1595,ds:20};
+
+function bell(x,y,s,age,a){g.save();g.globalAlpha=a;g.translate(x,y);g.rotate(Math.sin(age*18)*0.35*Math.max(0,1-age/0.9));g.fillStyle='#ffd23f';
+  g.beginPath();g.moveTo(-s*0.45,s*0.3);g.quadraticCurveTo(-s*0.4,-s*0.5,0,-s*0.5);g.quadraticCurveTo(s*0.4,-s*0.5,s*0.45,s*0.3);g.closePath();g.fill();
+  g.beginPath();g.arc(0,s*0.42,s*0.13,0,7);g.fill();g.restore();}
+function bg(){g.fillStyle='#07080b';g.fillRect(0,0,W,H);
+  const sp=g.createRadialGradient(W/2,L.by,40,W/2,L.by,WIDE?900:760);sp.addColorStop(0,'rgba(143,91,255,.13)');sp.addColorStop(1,'rgba(143,91,255,0)');g.fillStyle=sp;g.fillRect(0,0,W,H);
+  g.strokeStyle='rgba(255,255,255,.04)';g.lineWidth=2;for(let x=0;x<W;x+=60){g.beginPath();g.moveTo(x,L.floor);g.lineTo(W/2+(x-W/2)*2.2,H);g.stroke();}
+  g.fillStyle='#1c1e24';g.fillRect(0,L.floor,W,3);}
+// balance of debt i at time t (interpolated between month-ends)
+function balAt(i,t){if(t<T0)return DEBTS[i].bal;const f=(t-T0)/MT,m=Math.floor(f);if(m>=SNOW.m)return 0;
+  const a=SNOW.hist[m][i],b=SNOW.hist[m+1][i];return a+(b-a)*clamp((f-m)/0.6);}
+function target(t){for(let i=0;i<3;i++)if(balAt(i,t)>0.5)return i;return -1;}
+function boss(i,t){
+  const x=L.bx[i],y=L.by,R0=L.br[i],d=DEBTS[i],bal=balAt(i,t),pm=SNOW.paid[i],dt=t-tm(pm);
+  const ap=clamp((t-1.2-i*0.35)/0.4);if(ap<=0)return;
+  if(dt>=0){ // defeated: burst then PAID OFF tag
+    if(dt<0.5){for(let k=0;k<14;k++){const an=k/14*6.28,r=R0*(0.6+dt*3);g.save();g.globalAlpha=1-dt/0.5;g.fillStyle=k%2?d.col:'#ffd23f';g.beginPath();g.arc(x+Math.cos(an)*r,y+Math.sin(an)*r,10,0,7);g.fill();g.restore();}}
+    if(dt<1)pop('DEFEATED!',x,y-R0-20,dt,'#3ddc84',WIDE?28:34);
+    const a=clamp((dt-0.2)/0.3);text('PAID OFF',x,y,L.bfs,'#3ddc84',{stroke:8,sc:'#111',alpha:a});
+    text('MONTH '+pm,x,y+(WIDE?40:46),L.nfs,'#9aa0b2',{weight:800,alpha:a});
+    return;}
+  const hpF=bal/d.bal,R=R0*(0.75+0.25*hpF)*back(ap),hit=target(t)===i&&t>=T0&&t<T1,sh=hit?Math.sin(t*50)*3:0;
+  g.save();g.globalAlpha=ap;g.translate(x+sh,y+Math.sin(t*3+i)*6);
+  // horns
+  g.fillStyle='#f1e7d0';for(const s of [-1,1]){g.beginPath();g.moveTo(s*R*0.35,-R*0.8);g.lineTo(s*R*0.75,-R*1.35);g.lineTo(s*R*0.7,-R*0.55);g.closePath();g.fill();}
+  // body (lumpy blob)
+  g.fillStyle=d.col;g.strokeStyle='#111';g.lineWidth=6;g.beginPath();
+  for(let k=0;k<=24;k++){const an=k/24*6.283,r=R*(1+0.06*Math.sin(an*5+t*4));const px=Math.cos(an)*r,py=Math.sin(an)*r*0.92;k?g.lineTo(px,py):g.moveTo(px,py);}
+  g.closePath();g.fill();g.stroke();
+  // angry eyes + toothy mouth
+  for(const s of [-1,1]){g.fillStyle='#fff';g.beginPath();g.arc(s*R*0.33,-R*0.15,R*0.2,0,7);g.fill();g.fillStyle='#111';g.beginPath();g.arc(s*R*0.3,-R*0.1,R*0.09,0,7);g.fill();
+    g.strokeStyle='#111';g.lineWidth=7;g.beginPath();g.moveTo(s*R*0.55,-R*0.45);g.lineTo(s*R*0.12,-R*0.3);g.stroke();}
+  g.fillStyle='#2a0a10';g.beginPath();g.ellipse(0,R*0.35,R*0.42,R*(hit?0.24:0.16),0,0,7);g.fill();
+  g.fillStyle='#fff';for(let k=-2;k<=2;k++){g.beginPath();g.moveTo(k*R*0.15-8,R*0.22);g.lineTo(k*R*0.15+8,R*0.22);g.lineTo(k*R*0.15,R*0.34);g.closePath();g.fill();}
+  g.restore();
+  // name + HP bar
+  const hy=L.hp[0],hw=L.hpw;
+  text(d.name,x,hy,L.nfs,'#cfd3e0',{weight:900,alpha:ap,spacing:1});
+  g.save();g.globalAlpha=ap;g.fillStyle='#1b1d23';rr(x-hw/2,L.hp[1]-14,hw,28,14);g.fill();
+  g.fillStyle=hpF>0.5?'#ff5a6e':'#ffb020';if(hpF>0.01){rr(x-hw/2,L.hp[1]-14,hw*hpF,28,14);g.fill();}g.restore();
+  text(gbp(bal),x,L.hp[1]+(WIDE?38:44),L.bfs,'#fff',{stroke:7,sc:'#111',alpha:ap});
+  text(Math.round(d.apr*1000)/10+'% APR · min '+gbp(d.min),x,L.hp[1]+(WIDE?72:84),L.nfs-4,'#8a90a3',{weight:700,alpha:ap});
+}
+function render(t){
+  g.clearRect(0,0,W,H);bg();
+  for(let i=0;i<3;i++)boss(i,t);
+  // hero + coin shots
+  const tg=target(t),hx=L.figx,hy=L.floor-(WIDE?190:215);
+  if(t>=T0&&t<T1&&tg>=0){
+    for(let k=0;k<200;k++){const st=T0+k*0.09,age=t-st;if(age<0)break;if(age>0.4)continue;
+      const tt=target(st);if(tt<0)continue;const q=eOut(age/0.4),tx=L.bx[tt],ty=L.by+L.br[tt]*0.3;
+      const big=1+tt*0.5; // snowball grows as payments roll
+      coin(hx+(tx-hx)*q,hy+(ty-hy)*q-Math.sin(q*Math.PI)*60,(WIDE?9:11)*big,k+t*9);}
+    // thin trickle for minimums on the other bosses
+    for(let i=tg+1;i<3;i++)for(let k=0;k<200;k++){const st=T0+k*0.45+i*0.1,age=t-st;if(age<0)break;if(age>0.5)continue;
+      const q=eOut(age/0.5),tx=L.bx[i],ty=L.by+L.br[i]*0.3;g.save();g.globalAlpha=0.7;coin(hx+(tx-hx)*q,hy+(ty-hy)*q-Math.sin(q*Math.PI)*40,WIDE?6:7,k);g.restore();}
+  }
+  let face='meh',armR=0.2;
+  if(t>1.5&&t<T0)face='shock',armR=0.3;
+  if(t>=T0&&t<T1){face='happy';armR=2.3+Math.sin(t*14)*0.25;}
+  for(const m of SNOW.paid){const dt=t-tm(m);if(dt>=0&&dt<0.8)face='cool',armR=2.8;}
+  if(t>=T1)face='cool',armR=2.8;
+  stick(L.figx,L.floor,{acc:'beanie',face,armL:0.2,armR,look:0,scale:L.sc,bob:Math.sin(t*4)*2});
+  // attack pill (rolling payment) next to hero
+  if(t>=T0-0.6&&t<T1){const ai=Math.max(0,tg),a=clamp((t-T0+0.6)/0.3);
+    const ax=WIDE?L.figx+300:L.figx,ay=WIDE?L.atk:L.atk;
+    text('ATTACK: '+gbp(ATTACK[ai])+' A MONTH',ax,ay,L.afs,'#ffd23f',{stroke:7,sc:'#111',alpha:a});
+    SNOW.paid.slice(0,2).forEach((m,i)=>{const dt=t-tm(m);if(dt>=0&&dt<1.4)pop('PAYMENT ROLLS UP: '+gbp(ATTACK[i])+' → '+gbp(ATTACK[i+1]),W/2,L.cnt[0]+20,dt*0.7,'#3ddc84',L.c2fs);});}
+  // month counter
+  if(t>=T0-0.3&&t<END){const m=Math.min(SNOW.m,Math.floor(clamp((t-T0)/MT,0,SNOW.m)));
+    text('MONTH '+m,L.mon[0],L.mon[1],L.mfs,'#cfd3e0',{weight:900,alpha:clamp((t-T0+0.3)/0.3)*(1-clamp((t-END+0.3)/0.3)),stroke:6,sc:'#111'});}
+  // counters
+  if(t>=1.6&&t<T0){const a=clamp((t-1.6)/0.3)*(1-clamp((t-T0+0.3)/0.3));
+    text('MINIMUMS ONLY: '+MINONLY.m+' MONTHS',W/2,L.cnt[0],L.cfs,'#ff5a6e',{stroke:8,sc:'#111',alpha:a});
+    text(gbp(MINONLY.int)+' IN INTEREST',W/2,L.cnt[1],L.c2fs,'#ff5a6e',{stroke:7,sc:'#111',alpha:clamp((t-2.2)/0.3)*(1-clamp((t-T0+0.3)/0.3))});}
+  if(t>=T1){const a=clamp((t-T1)/0.3);
+    text('DEBT-FREE: '+SNOW.m+' MONTHS, NOT '+MINONLY.m,W/2,L.cnt[0],L.cfs,'#3ddc84',{stroke:8,sc:'#111',alpha:a});
+    text(gbp(SAVED)+' LESS INTEREST',W/2,L.cnt[1],L.c2fs,'#ffd23f',{stroke:7,sc:'#111',alpha:clamp((t-T1-0.3)/0.3)});
+    if(t<T1+1.2)pop('DEBT-FREE!',W/2,L.by-(WIDE?110:170),(t-T1)/1.2,'#3ddc84',WIDE?56:70);}
+  // header
+  const hA=1-clamp((t-END)/0.4);
+  if(hA>0){
+    text('HOW TO GET OUT',W/2,L.head[0],L.hs,'#fff',{stroke:10,sc:'#111',alpha:hA*clamp(t/0.4)});
+    text('OF '+gbp(TOTAL)+' OF DEBT',W/2,L.head[1],L.hs,'#ffd23f',{stroke:10,sc:'#111',alpha:hA*clamp((t-0.3)/0.4)});
+    const sub=t<T0?'Three debts. '+gbp(BUDGET)+' a month to fight them.':t<T1?'Pay every minimum. Extra '+gbp(EXTRA)+' hits the SMALLEST.':'The debt snowball method';
+    const sa=t<T0?clamp((t-1.0)/0.4)*(1-clamp((t-T0+0.3)/0.3)):t<T1?clamp((t-T0)/0.3)*(1-clamp((t-T1+0.3)/0.3)):clamp((t-T1)/0.3);
+    text(sub,W/2,L.sub,L.subfs,'#9aa0b2',{weight:700,alpha:hA*sa});
+  }
+  if(t>=END){const a=clamp((t-END-0.2)/0.4);
+    L.end.forEach(([y,s],i)=>text(s,W/2,y,L.es,i===L.end.length-1?'#3ddc84':'#fff',{stroke:10,sc:'#111',alpha:clamp((t-END-0.2-i*0.3)/0.4)}));
+    const c=clamp((t-END-1.2)/0.4),C=L.cta;
+    text(C.txt,C.tx,C.ty,C.ts,'#cfd3e0',{weight:700,alpha:c});
+    if(c>0)for(const B of C.btn){const pressed=t>END+B.at,k=clamp((t-END-B.at)/0.15),sq=1-0.08*Math.sin(Math.PI*k);
+      g.save();g.globalAlpha=c;g.translate(B.x,B.y);g.scale(sq,sq);g.fillStyle=pressed?'#2a2d35':B.col;rr(-B.w/2,-B.h/2,B.w,B.h,B.h/2);g.fill();g.restore();
+      const lx=B.bell&&pressed?B.x+14:B.x;
+      text(pressed?B.off:B.on,lx,B.y+1,C.bs*sq,pressed?'#fff':B.fg,{alpha:c});
+      if(B.bell&&pressed)bell(B.x-B.w/2+34,B.y,C.bs*0.9,t-END-B.at,c);}
+    const d1='Illustration only: example balances, APRs and minimums, fixed monthly interest.',d2='Not financial advice.';
+    if(WIDE)text(d1+' '+d2,W/2,L.disc,L.ds,'#6f7486',{weight:500,alpha:a});
+    else{text(d1,W/2,L.disc,L.ds,'#6f7486',{weight:500,alpha:a});text(d2,W/2,L.disc+30,L.ds,'#6f7486',{weight:500,alpha:a});}
+  }
+}
+window.render=render;render(0);
+</script></body></html>

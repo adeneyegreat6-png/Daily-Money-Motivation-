@@ -9,3 +9,8 @@ Mark a topic [x] with the date once it is posted. When all are done, research ne
 - [x] 2026-11-12 Emergency Fund vs Credit Card: The Same £800 Boiler Bill (dark minimal) — efund.html
 - [x] 2026-11-13 Money Management: Rich vs Middle Class vs Poor on Payday (three-floor building) — payday.html
 - [x] 2026-11-14 Saving Money Tips: 5 Small Leaks Costing You £3,000 a Year (pipes & barrels) — leaks.html
+- [x] 2026-11-15 How to Get Out of Debt: The Debt Snowball Method (boss battle) — snowball.html
+- [ ] Sinking Funds: Pay for Christmas Without a Credit Card (roller-coaster)
+- [ ] Pay Yourself First: Same Salary, Different Order (three-floor building)
+- [ ] Lifestyle Creep: Pay Rise, Still Broke (roller-coaster)
+- [ ] Buy Now Pay Later: The Real Cost of Four Easy Payments (dark minimal comparison)
