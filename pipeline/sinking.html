@@ -1,0 +1,142 @@
+<!doctype html><html><head><meta charset="utf-8"><style>html,body{margin:0;background:#000}canvas{display:block}</style></head><body>
+<canvas id="c" width="1080" height="1920"></canvas>
+<script>const WIDE=location.search.includes('wide');if(WIDE){const c=document.getElementById('c');c.width=1920;c.height=1080;}</script>
+<script src="common.js"></script>
+<script>
+// ===== "Sinking Funds: Pay for Christmas Without a Credit Card" — roller-coaster style =====
+// Two riders, same £50 a month for 12 months, same £600 Christmas.
+// SINKING FUND: saves £50/month Jan-Dec, pays Christmas in cash.
+// CREDIT CARD: last Christmas (£600) is on a 24.9% APR card; pays £50/month Jan-Dec, then puts this Christmas on the card too.
+const XMAS=600, PAY=50, APR=0.249, R=APR/12, MONTHS=12;
+const MN=['JAN','FEB','MAR','APR','MAY','JUN','JUL','AUG','SEP','OCT','NOV','DEC'];
+// sinking fund balance after m payments (no interest assumed)
+const FUND=[];for(let m=0;m<=MONTHS;m++)FUND.push(PAY*m);
+// card balance after m months: interest accrues, then £50 payment
+const CARD=[XMAS];let INT=0;{let b=XMAS;for(let m=1;m<=MONTHS;m++){const it=b*R;INT+=it;b=b+it-PAY;CARD.push(b);}}
+const LEFT=CARD[MONTHS], AFTER=LEFT+XMAS, PAID=PAY*MONTHS;
+console.log('fund',FUND[MONTHS],'left',LEFT.toFixed(2),'int',INT.toFixed(2),'after',AFTER.toFixed(2),'paid',PAID);
+if(FUND[MONTHS]!==600||PAID!==600||Math.round(LEFT)!==94||Math.round(INT)!==94||Math.round(AFTER)!==694||Math.abs(PAID-(XMAS-LEFT)-INT)>0.01)throw new Error('numbers changed');
+// track points: value (+ve = saved, -ve = owed). Index 0..12 months, 13 = after Christmas
+const TA=FUND.concat([0]), TB=CARD.map(v=>-v).concat([-AFTER]);
+
+const T0=4.6,MT=0.8,T1=T0+MONTHS*MT,DROP=0.7,END=15.8; // T1=14.2, drop finishes 14.9
+const L=WIDE?{head:[58,124],hs:54,sub:192,subfs:28,
+   P:[{x0:130,x1:870,zero:760,sc:0.6,lab:250,col:'#3ddc84',name:'SINKING FUND',acc:'beanie'},
+      {x0:1050,x1:1790,zero:362,sc:0.58,lab:250,col:'#ff5a6e',name:'CREDIT CARD',acc:'cap'}],
+   lfs:28,vfs:32,vdy:38,mfs:18,cs:0.2,cart:[70,38],res:[[500,890],[1420,890]],rfs:30,r2fs:24,rdy:42,mid:[960,560],midfs:26,
+   end:[[90,'SAVE FOR CHRISTMAS BEFORE IT ARRIVES.']],es:56,
+   cta:{txt:'Subscribe for a new money habit every day',tx:735,ty:1018,ts:30,btn:[{x:1205,y:1018,w:230,h:58,on:'Subscribe',off:'Subscribed',col:'#ff2d3d',fg:'#fff',at:2.4,bell:true}],bs:26},disc:1062,ds:15}
+ :{head:[250,335],hs:70,sub:440,subfs:34,
+   P:[{x0:120,x1:960,zero:940,sc:0.55,lab:525,col:'#3ddc84',name:'SINKING FUND',acc:'beanie'},
+      {x0:120,x1:960,zero:1125,sc:0.44,lab:1012,col:'#ff5a6e',name:'CREDIT CARD',acc:'cap'}],
+   lfs:32,vfs:38,vdy:44,mfs:22,cs:0.24,cart:[84,44],res:[[540,1478],[540,1560]],rfs:36,r2fs:28,rdy:0,mid:[540,1500],midfs:34,
+   end:[[250,'SAVE FOR CHRISTMAS'],[335,'BEFORE IT ARRIVES.']],es:70,
+   cta:{txt:'Subscribe & follow Daily Money Motivation',tx:540,ty:1680,ts:36,btn:[{x:395,y:1765,w:270,h:68,on:'Subscribe',off:'Subscribed',col:'#ff2d3d',fg:'#fff',at:2.4,bell:true},{x:705,y:1765,w:230,h:68,on:'Follow',off:'Following',col:'#ffd23f',fg:'#111',at:3.0}],bs:30},disc:1615,ds:19};
+
+function bell(x,y,s,age,a){g.save();g.globalAlpha=a;g.translate(x,y);g.rotate(Math.sin(age*18)*0.35*Math.max(0,1-age/0.9));g.fillStyle='#ffd23f';
+  g.beginPath();g.moveTo(-s*0.45,s*0.3);g.quadraticCurveTo(-s*0.4,-s*0.5,0,-s*0.5);g.quadraticCurveTo(s*0.4,-s*0.5,s*0.45,s*0.3);g.closePath();g.fill();
+  g.beginPath();g.arc(0,s*0.42,s*0.13,0,7);g.fill();g.restore();}
+// x of track index (0..13); the Christmas drop is a short steep segment
+const px=(P,k)=>{const span=P.x1-P.x0,step=span/(MONTHS+0.55);return P.x0+(k<=MONTHS?k*step:MONTHS*step+0.55*step);};
+const py=(P,v)=>P.zero-v*P.sc;
+// progress along track (float index) at time t
+function prog(t){if(t<T0)return 0;if(t<T1)return (t-T0)/MT;return MONTHS+clamp((t-T1)/DROP);}
+function val(T,k){const i=Math.min(Math.floor(k),T.length-2),f=k-i;const e=i===MONTHS?eIn(f):f;return T[i]+(T[i+1]-T[i])*e;}
+function bg(){g.fillStyle='#07080b';g.fillRect(0,0,W,H);
+  const sp=g.createRadialGradient(W/2,H*0.42,40,W/2,H*0.42,WIDE?950:900);sp.addColorStop(0,'rgba(61,220,132,.08)');sp.addColorStop(1,'rgba(61,220,132,0)');g.fillStyle=sp;g.fillRect(0,0,W,H);
+  for(let i=0;i<60;i++){const x=rand(i)*W,y=rand(i+99)*H*0.95,tw=0.3+0.7*Math.abs(Math.sin(i));g.fillStyle=`rgba(255,255,255,${0.05+0.08*tw})`;g.fillRect(x,y,3,3);}}
+function track(P,T,a,draw){ // draw = 0..1 how much of the track is built
+  const n=T.length-1,kmax=n*draw;
+  // ground line + £0
+  g.save();g.globalAlpha=a;g.strokeStyle='rgba(255,255,255,.22)';g.lineWidth=3;g.setLineDash([10,10]);g.beginPath();g.moveTo(P.x0-20,P.zero);g.lineTo(P.x1+10,P.zero);g.stroke();g.setLineDash([]);g.restore();
+  text('£0',P.x0-30,P.zero,WIDE?20:24,'#8a90a3',{weight:800,align:'right',alpha:a});
+  // supports
+  g.save();g.globalAlpha=a*0.55;g.strokeStyle=P.col;g.lineWidth=4;
+  for(let k=0;k<=kmax+0.001&&k<=n;k+=0.5){const x=px(P,k),y=py(P,val(T,Math.min(k,n-0.0001)));g.beginPath();g.moveTo(x,y);g.lineTo(x,P.zero);g.stroke();}
+  g.restore();
+  // rails
+  const pts=[];for(let k=0;k<=kmax;k+=0.05){pts.push([px(P,k),py(P,val(T,Math.min(k,n-0.0001)))]);}
+  if(pts.length>1){g.save();g.globalAlpha=a;g.lineCap='round';g.lineJoin='round';
+    for(const [w,c] of [[16,'#111'],[10,P.col],[3,'rgba(255,255,255,.5)']]){g.strokeStyle=c;g.lineWidth=w;g.beginPath();pts.forEach((p,i)=>i?g.lineTo(p[0],p[1]):g.moveTo(p[0],p[1]));g.stroke();}
+    g.restore();}
+  // month letters
+  for(let m=0;m<MONTHS;m++){const x=(px(P,m)+px(P,m+1))/2,y=P===L.P[1]?P.zero-26:P.zero+28;
+    text(MN[m][0],x,y,L.mfs,'#6f7486',{weight:800,alpha:a*clamp((draw*n-m)/1)});}
+}
+function rider(P,T,t,i){
+  const k=prog(t),x=px(P,k),v=val(T,Math.min(k,T.length-1.0001)),y=py(P,v);
+  const k2=Math.min(k+0.05,T.length-1.0001),ang=Math.atan2(py(P,val(T,k2))-y,px(P,k2)-x);
+  const [cw,ch]=L.cart;
+  let face=i?'meh':'happy';
+  if(i&&t>=T1)face='shock'; if(!i&&t>=T1)face='cool';
+  if(i&&t>1.6&&t<T0)face='sad';
+  g.save();g.translate(x,y);g.rotate(clamp(ang,-1.2,1.2));
+  // rider sits in cart
+  stick(0,-ch*0.2,{acc:P.acc,face,armL:t>=T1&&!i?2.6:0.5,armR:t>=T1&&!i?2.6:(i&&t>=T1?2.9:0.5),scale:L.cs,spread:0.05});
+  g.fillStyle=P.col;g.strokeStyle='#111';g.lineWidth=5;rr(-cw/2,-ch-6,cw,ch,10);g.fill();g.stroke();
+  g.fillStyle='rgba(0,0,0,.25)';rr(-cw/2+6,-ch+4,cw-12,8,4);g.fill();
+  for(const s of [-1,1]){g.fillStyle='#222';g.beginPath();g.arc(s*cw*0.3,-6,9,0,7);g.fill();g.fillStyle='#aaa';g.beginPath();g.arc(s*cw*0.3,-6,4,0,7);g.fill();}
+  g.restore();
+  return {x,y,v};
+}
+function render(t){
+  g.clearRect(0,0,W,H);bg();
+  const build=eOut(clamp((t-0.8)/2.8));
+  L.P.forEach((P,i)=>{const a=clamp((t-0.6-i*0.3)/0.4),T=i?TB:TA;
+    track(P,T,a,build);
+    // label + live balance
+    text(P.name,P.x0-10,P.lab,L.lfs,P.col,{align:'left',stroke:7,sc:'#111',alpha:a,spacing:1});
+    const k=prog(t),v=val(T,Math.min(k,T.length-1.0001));
+    const vs=v>=0?gbp(v)+' SAVED':gbp(-v)+' OWED';
+    text(vs,P.x0-10,P.lab+L.vdy,L.vfs,v>=0?'#fff':'#ff8a96',{align:'left',stroke:8,sc:'#111',alpha:a});
+    if(a>0){g.save();g.globalAlpha=a;rider(P,T,t,i);g.restore();}
+  });
+  // events
+  const PA=L.P[0],PB=L.P[1];
+  if(t>1.6&&t<T0+0.6)pop('LAST CHRISTMAS: '+gbp(XMAS)+' ON CARD',(PB.x0+PB.x1)/2+(WIDE?100:60),PB.zero+(WIDE?330:250),clamp((t-1.6)/2.6),'#ff8a96',WIDE?26:32);
+  for(let m=1;m<=MONTHS;m++){const tt=T0+m*MT,age=(t-tt+0.1)/0.9;
+    if(age>0&&age<1){pop('+'+gbp(PAY),px(PA,m),py(PA,FUND[m])-(WIDE?95:110),age,'#3ddc84',WIDE?24:28);
+      pop('-'+gbp(PAY),px(PB,m),py(PB,-CARD[m])-(WIDE?95:105),age,'#ffd23f',WIDE?24:28);}}
+  // interest nibble label mid-ride
+  if(t>T0+3*MT&&t<T1){const a=clamp((t-T0-3*MT)/0.4)*(1-clamp((t-T1+0.4)/0.4));
+    text('24.9% APR keeps biting back',(PB.x0+PB.x1)/2+(WIDE?100:60),PB.zero+(WIDE?335:255),WIDE?24:30,'#ff8a96',{weight:800,alpha:a});}
+  if(t>=T1){const d=(t-T1)/1.6;
+    pop('CHRISTMAS PAID IN CASH',(PA.x0+PA.x1)/2-(WIDE?110:90),PA.zero-(WIDE?250:220),d,'#3ddc84',WIDE?32:38);
+    pop('CHRISTMAS ON CARD AGAIN',(PB.x0+PB.x1)/2+(WIDE?100:60),PB.zero+(WIDE?335:255),d,'#ff5a6e',WIDE?32:38);}
+  // mid / result counters
+  if(t>=T0-0.3&&t<T1){const m=Math.min(MONTHS,Math.floor(clamp((t-T0)/MT,0,MONTHS))),a=clamp((t-T0+0.3)/0.3)*(1-clamp((t-T1+0.3)/0.3));
+    if(WIDE)text('BOTH PAY '+gbp(PAY)+' A MONTH · '+(m?MN[m-1]:'JAN'),L.mid[0],L.mid[1]+380,L.midfs,'#cfd3e0',{weight:900,stroke:6,sc:'#111',alpha:a});
+    else text('BOTH PAY '+gbp(PAY)+' A MONTH · '+(m?MN[m-1]:'JAN'),L.mid[0],L.mid[1],L.midfs,'#cfd3e0',{weight:900,stroke:6,sc:'#111',alpha:a});}
+  if(t>=T1+DROP){const a=clamp((t-T1-DROP)/0.3),b=clamp((t-T1-DROP-0.4)/0.3);
+    if(WIDE){text('£0 DEBT. GIFTS PAID FOR.',L.res[0][0],L.res[0][1],L.rfs,'#3ddc84',{stroke:8,sc:'#111',alpha:a});
+      text('Same '+gbp(PAID)+' paid in',L.res[0][0],L.res[0][1]+L.rdy,L.r2fs,'#cfd3e0',{weight:700,alpha:b});
+      text('NOW OWES '+gbp(AFTER),L.res[1][0],L.res[1][1],L.rfs,'#ff5a6e',{stroke:8,sc:'#111',alpha:a});
+      text(gbp(PAID)+' paid, '+gbp(INT)+' of it interest',L.res[1][0],L.res[1][1]+L.rdy,L.r2fs,'#cfd3e0',{weight:700,alpha:b});}
+    else{text('FUND: £0 DEBT, GIFTS PAID',L.res[0][0],L.res[0][1],L.rfs,'#3ddc84',{stroke:8,sc:'#111',alpha:a});
+      text('CARD: NOW OWES '+gbp(AFTER),L.res[0][0],L.res[0][1]+44,L.rfs,'#ff5a6e',{stroke:8,sc:'#111',alpha:a});
+      text('Same '+gbp(PAID)+' paid in. '+gbp(INT)+' of it was interest.',L.res[1][0],L.res[1][1]+4,L.r2fs,'#cfd3e0',{weight:700,alpha:b});}}
+  // header
+  const hA=1-clamp((t-END)/0.4);
+  if(hA>0){
+    text('SINKING FUND vs CARD',W/2,L.head[0],L.hs,'#fff',{stroke:10,sc:'#111',alpha:hA*clamp(t/0.4)});
+    text('SAME '+gbp(PAY)+' A MONTH',W/2,L.head[1],L.hs,'#ffd23f',{stroke:10,sc:'#111',alpha:hA*clamp((t-0.3)/0.4)});
+    const sub=t<T0?'A '+gbp(XMAS)+' Christmas, two ways':t<T1?'One saves first. One pays off last year.':'How to pay for Christmas without a credit card';
+    const sa=t<T0?clamp((t-1.0)/0.4)*(1-clamp((t-T0+0.3)/0.3)):t<T1?clamp((t-T0)/0.3)*(1-clamp((t-T1+0.3)/0.3)):clamp((t-T1)/0.3);
+    text(sub,W/2,L.sub,L.subfs,'#9aa0b2',{weight:700,alpha:hA*sa});
+  }
+  if(t>=END){const a=clamp((t-END-0.2)/0.4);
+    L.end.forEach(([y,s],i)=>text(s,W/2,y,L.es,i===L.end.length-1?'#3ddc84':'#fff',{stroke:10,sc:'#111',alpha:clamp((t-END-0.2-i*0.3)/0.4)}));
+    const c=clamp((t-END-1.2)/0.4),C=L.cta;
+    text(C.txt,C.tx,C.ty,C.ts,'#cfd3e0',{weight:700,alpha:c});
+    if(c>0)for(const B of C.btn){const pressed=t>END+B.at,k=clamp((t-END-B.at)/0.15),sq=1-0.08*Math.sin(Math.PI*k);
+      g.save();g.globalAlpha=c;g.translate(B.x,B.y);g.scale(sq,sq);g.fillStyle=pressed?'#2a2d35':B.col;rr(-B.w/2,-B.h/2,B.w,B.h,B.h/2);g.fill();g.restore();
+      const lx=B.bell&&pressed?B.x+14:B.x;
+      text(pressed?B.off:B.on,lx,B.y+1,C.bs*sq,pressed?'#fff':B.fg,{alpha:c});
+      if(B.bell&&pressed)bell(B.x-B.w/2+34,B.y,C.bs*0.9,t-END-B.at,c);}
+    const d1='Illustration only: example £600 Christmas, 24.9% APR card, fund earns no interest.',d2='Not financial advice.';
+    if(WIDE)text(d1+' '+d2,W/2,L.disc,L.ds,'#6f7486',{weight:500,alpha:a});
+    else{text(d1,W/2,L.disc,L.ds,'#6f7486',{weight:500,alpha:a});text(d2,W/2,L.disc+30,L.ds,'#6f7486',{weight:500,alpha:a});}
+  }
+}
+window.render=render;render(0);
+</script></body></html>
