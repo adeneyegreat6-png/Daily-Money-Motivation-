@@ -1,0 +1,129 @@
+<!doctype html><html><head><meta charset="utf-8"><style>html,body{margin:0;background:#000}canvas{display:block}</style></head><body>
+<canvas id="c" width="1080" height="1920"></canvas>
+<script>const WIDE=location.search.includes('wide');if(WIDE){const c=document.getElementById('c');c.width=1920;c.height=1080;}</script>
+<script src="common.js"></script>
+<script>
+// ===== "Pay Yourself First: Same Salary, Different Order" — two three-floor buildings =====
+// Same £2,000 take-home and £1,200 bills in both buildings. Only the floor ORDER differs.
+const PAY=2000,BILLS=1200,FIRST=250,M=12;
+const LEFTOVER=[50,0,30,0,80,0,20,0,60,0,0,40];            // "save what's left": spending grows to fill the gap
+const lastSaved=[0],firstSaved=[0];
+for(let m=0;m<M;m++){lastSaved.push(lastSaved[m]+LEFTOVER[m]);firstSaved.push(firstSaved[m]+FIRST);}
+const LAST_TOT=lastSaved[M], FIRST_TOT=firstSaved[M], GAP=FIRST_TOT-LAST_TOT;
+const SPEND_L1=PAY-BILLS-LEFTOVER[0], SPEND_R=PAY-BILLS-FIRST;
+// checks: 280 / 3,000 / gap 2,720; month-1 spend 750 (left) and 550 (right); every month adds up to £2,000
+console.assert(LAST_TOT===280&&FIRST_TOT===3000&&GAP===2720&&SPEND_L1===750&&SPEND_R===550);
+for(let m=0;m<M;m++)console.assert((PAY-BILLS-LEFTOVER[m])+BILLS+LEFTOVER[m]===PAY);
+console.log('last',LAST_TOT,'first',FIRST_TOT,'gap',GAP);
+
+const T_FLOW=3.6,T0=7.6,T1=14.0,END=15.4,MT=(T1-T0)/M;
+const L=WIDE?{head:[58,124],hs:54,sub:192,subfs:28,top:300,fh:210,bx:[250,1030],bw:640,roof:52,rfs:26,sc:0.36,figx:96,
+   lab:[30,20],amt:50,asub:18,popfs:30,end:90,es:72,res:34,
+   cta:{txt:'Subscribe for a new money habit every day',tx:735,ty:1018,ts:30,btn:[{x:1205,y:1018,w:230,h:58,on:'Subscribe',off:'Subscribed',col:'#ff2d3d',fg:'#fff',at:2.4,bell:true}],bs:26},disc:1062,ds:15}
+ :{head:[250,335],hs:72,sub:445,subfs:34,top:580,fh:300,bx:[36,560],bw:484,roof:62,rfs:30,sc:0.48,figx:96,
+   lab:[34,24],amt:56,asub:19,popfs:36,end:290,es:68,res:38,
+   cta:{txt:'Subscribe & follow Daily Money Motivation',tx:540,ty:1680,ts:36,btn:[{x:395,y:1765,w:270,h:68,on:'Subscribe',off:'Subscribed',col:'#ff2d3d',fg:'#fff',at:2.4,bell:true},{x:705,y:1765,w:230,h:68,on:'Follow',off:'Following',col:'#ffd23f',fg:'#111',at:3.0}],bs:30},disc:1600,ds:19};
+const GREEN='#3ddc84',RED='#ff5a6e',YEL='#ffd23f',GREY='#8f95a6';
+const B=[ // left = save last, right = save first; floors top -> bottom
+ {title:'SAVE LAST',col:RED,acc:'cap',floors:[{k:'spend',n:'SPEND'},{k:'bills',n:'BILLS'},{k:'save',n:"SAVE WHAT'S LEFT"}],left:[PAY,PAY-SPEND_L1,PAY-SPEND_L1-BILLS,0]},
+ {title:'SAVE FIRST',col:GREEN,acc:'tie',floors:[{k:'save',n:'SAVE £250'},{k:'bills',n:'BILLS'},{k:'spend',n:'SPEND THE REST'}],left:[PAY,PAY-FIRST,PAY-FIRST-BILLS,0]},
+];
+const lerpArr=(A,m)=>{const i=Math.floor(m),f=m-i;return i>=M?A[M]:A[i]+(A[i+1]-A[i])*f;};
+function bell(x,y,s,age,a){g.save();g.globalAlpha=a;g.translate(x,y);g.rotate(Math.sin(age*18)*0.35*Math.max(0,1-age/0.9));g.fillStyle=YEL;
+  g.beginPath();g.moveTo(-s*0.45,s*0.3);g.quadraticCurveTo(-s*0.4,-s*0.5,0,-s*0.5);g.quadraticCurveTo(s*0.4,-s*0.5,s*0.45,s*0.3);g.closePath();g.fill();
+  g.beginPath();g.arc(0,s*0.42,s*0.13,0,7);g.fill();g.restore();}
+function envelope(x,y,s,a){if(a<=0)return;g.save();g.globalAlpha=a;g.translate(x,y);g.scale(s,s);g.fillStyle='#f3e9cf';rr(-46,-30,92,60,6);g.fill();
+  g.strokeStyle='#b9a77a';g.lineWidth=3;g.beginPath();g.moveTo(-46,-28);g.lineTo(0,6);g.lineTo(46,-28);g.stroke();g.restore();
+  text('£2,000',x,y+14*s,20*s,'#2d6b45',{alpha:a});}
+function bagIcon(x,y,s,a,col){g.save();g.globalAlpha=a;g.translate(x,y);g.scale(s,s);g.strokeStyle='#111';g.lineWidth=5;
+  g.fillStyle=col;rr(-40,-30,80,76,10);g.fill();g.stroke();g.strokeStyle=col;g.lineWidth=7;g.beginPath();g.arc(0,-30,22,Math.PI,0);g.stroke();g.restore();}
+function billIcon(x,y,s,a){g.save();g.globalAlpha=a;g.translate(x,y);g.scale(s,s);g.fillStyle='#e9ecf3';g.strokeStyle='#111';g.lineWidth=5;
+  rr(-34,-46,68,92,6);g.fill();g.stroke();g.strokeStyle='#9aa0b2';g.lineWidth=5;for(let i=0;i<4;i++){g.beginPath();g.moveTo(-20,-24+i*17);g.lineTo(i===3?4:20,-24+i*17);g.stroke();}g.restore();}
+
+function render(t){
+  g.fillStyle='#07080b';g.fillRect(0,0,W,H);
+  const {top,fh,bw}=L, bot=top+3*fh;
+  const sp=g.createRadialGradient(W/2,top+fh*1.5,60,W/2,top+fh*1.5,WIDE?950:900);sp.addColorStop(0,'rgba(255,255,255,.06)');sp.addColorStop(1,'rgba(255,255,255,0)');g.fillStyle=sp;g.fillRect(0,0,W,H);
+  g.fillStyle='#22252d';g.fillRect(0,bot,W,4);
+  const mF=clamp((t-T0)/(T1-T0))*M, running=t>=T0&&t<T1, ph=((t-T0)/MT)%1, mi=Math.min(M-1,Math.floor(mF));
+  for(let b=0;b<2;b++){
+    const BD=B[b],bx=L.bx[b],ap=clamp((t-0.4-b*0.25)/0.4);
+    // roof + title
+    g.save();g.globalAlpha=ap;g.fillStyle='#1a1c23';g.beginPath();g.moveTo(bx-16,top);g.lineTo(bx+bw/2,top-L.roof);g.lineTo(bx+bw+16,top);g.closePath();g.fill();g.restore();
+    text(BD.title,bx+bw/2,top-L.roof*0.36,L.rfs,BD.col,{spacing:3,alpha:ap});
+    // payday envelope drops through the roof into the top floor
+    for(let f=0;f<3;f++){
+      const FL=BD.floors[f],y=top+f*fh,fa=clamp((t-0.6-b*0.25-f*0.15)/0.4);
+      const rev=clamp((t-(T_FLOW+0.2+f*1.0+b*0.15))/0.35); // order reveal
+      const col=FL.k==='save'?(b===0?RED:GREEN):FL.k==='bills'?'#cfd3e0':YEL;
+      g.save();g.globalAlpha=fa;g.fillStyle=['#10131a','#0f1117','#0e0f14'][f];g.fillRect(bx,y,bw,fh);
+      g.strokeStyle='#2a2d36';g.lineWidth=4;g.strokeRect(bx,y,bw,fh);g.fillStyle=rev>0?col:'#2a2d36';g.fillRect(bx,y,8,fh);g.restore();
+      text(String(f+1),bx+28,y+L.lab[0],L.lab[1],GREY,{align:'left',alpha:fa});
+      text(FL.n,bx+52,y+L.lab[0],L.lab[1],col,{align:'left',spacing:2,alpha:fa*Math.max(0.35,rev)});
+      // icons / figure
+      const ix=bx+L.figx,feet=y+fh-8;
+      if(FL.k==='save'){
+        let face=b===1?'happy':'meh',armR=0.2;
+        if(b===0&&t>T_FLOW+2.2)face='sad';
+        if(b===1&&running&&ph<0.4)armR=1.2;
+        if(t>=T1)face=b===1?'cool':'sad';
+        g.save();g.globalAlpha=fa;stick(ix,feet,{acc:BD.acc,face,armL:0.15,armR,look:1,scale:L.sc,bob:Math.sin(t*4+b)*2});g.restore();
+      } else if(FL.k==='spend')bagIcon(ix,y+fh*0.55,WIDE?0.8:1,fa,YEL);
+      else billIcon(ix,y+fh*0.55,WIDE?0.8:1,fa);
+      // amounts
+      const ax=bx+bw-24, ay=y+fh*0.5;
+      if(t<T0-0.2){
+        const a=rev*(1-clamp((t-T0+0.5)/0.3));
+        let v=FL.k==='bills'?BILLS:FL.k==='save'?(b===0?LEFTOVER[0]:FIRST):(b===0?SPEND_L1:SPEND_R);
+        text(gbp(v),ax,ay,L.amt,col,{align:'right',alpha:a});
+        text(FL.k==='save'?(b===0?'only what was left':'paid on payday'):FL.k==='bills'?'rent, energy, phone':(b===0?'paid first':'guilt-free'),ax,ay+L.amt*0.85,L.asub,GREY,{align:'right',weight:700,alpha:a});
+      } else {
+        const a=clamp((t-T0+0.2)/0.3);
+        if(FL.k==='save'){
+          const v=b===0?lerpArr(lastSaved,mF):lerpArr(firstSaved,mF);
+          text(gbp(v),ax,ay,L.amt*1.15,col,{align:'right',alpha:a});
+          text('SAVED',ax,ay+L.amt*0.95,L.asub,GREY,{align:'right',weight:800,spacing:2,alpha:a});
+          if(running){const add=b===0?LEFTOVER[mi]:FIRST;pop('+'+gbp(add),ax-70,ay-L.amt*0.8,ph*1.5,add>0?col:GREY,L.popfs);}
+        } else {
+          const v=FL.k==='bills'?BILLS:(b===0?PAY-BILLS-LEFTOVER[running?mi:0]:SPEND_R);
+          text(gbp(v)+'/mo',ax,ay,L.amt*0.7,'#6f7486',{align:'right',alpha:a});
+        }
+      }
+    }
+    const d0=(t-(1.6+b*0.2))/0.7;
+    if(d0>0&&d0<1.5)envelope(bx+bw/2,top+40+eOut(clamp(d0))*fh*0.35,WIDE?0.75:0.9,clamp(d0*4)*(1-clamp((d0-1.1)/0.4)));
+    if(running&&ph<0.55)envelope(bx+bw/2,top+40+eOut(clamp(ph/0.35))*fh*0.3,WIDE?0.6:0.7,clamp(ph*8)*(1-clamp((ph-0.4)/0.15)));
+    // "money left" counter above each building during the order reveal
+    const cA=clamp((t-T_FLOW)/0.3)*(1-clamp((t-T0+0.5)/0.3));
+    if(cA>0){let k=0;for(let f=0;f<3;f++)if(t>T_FLOW+0.4+f*1.0+b*0.15)k=f+1;
+      const v=BD.left[k];text('LEFT  '+gbp(v),bx+bw/2,L.sub,L.subfs,v===0?GREY:'#fff',{alpha:cA});}
+  }
+  // results
+  if(t>=T1){const a=clamp((t-T1-0.2)/0.4),sc=0.85+0.15*back(a);
+    text('SAVE FIRST = '+gbp(GAP)+' MORE IN A YEAR',W/2,L.sub,L.res*sc,GREEN,{alpha:a,stroke:6});}
+  // ---- header ----
+  const hA=1-clamp((t-END)/0.4);
+  if(hA>0){
+    text('SAME £2,000 SALARY.',W/2,L.head[0],L.hs,'#fff',{alpha:hA*clamp(t/0.4)});
+    text('DIFFERENT ORDER.',W/2,L.head[1],L.hs,YEL,{alpha:hA*clamp((t-0.3)/0.4)});
+    const sa=hA*clamp((t-1.0)/0.4)*(1-clamp((t-T_FLOW+0.4)/0.3));
+    if(sa>0)text('Which floor gets paid first?',W/2,L.sub,L.subfs,'#9aa0b2',{weight:700,alpha:sa});
+    if(t>=T0-0.3&&t<T1){const mm=Math.max(1,Math.min(M,Math.ceil(mF)));const a=hA*clamp((t-T0+0.3)/0.3);
+      text('MONTH',W/2-14,L.sub,WIDE?26:30,'#9aa0b2',{align:'right',spacing:6,alpha:a});text(String(mm)+(mm===12?' (1 YEAR)':''),W/2+6,L.sub,WIDE?44:56,YEL,{align:'left',alpha:a});}
+  }
+  if(t>=END){const a=clamp((t-END-0.2)/0.4);
+    text('SAVE FIRST. THEN SPEND.',W/2,L.end,L.es,GREEN,{alpha:a});
+    const c=clamp((t-END-1.2)/0.4),C=L.cta;
+    text(C.txt,C.tx,C.ty,C.ts,'#cfd3e0',{weight:700,alpha:c});
+    if(c>0)for(const Bt of C.btn){const pressed=t>END+Bt.at,k=clamp((t-END-Bt.at)/0.15),sq=1-0.08*Math.sin(Math.PI*k);
+      g.save();g.globalAlpha=c;g.translate(Bt.x,Bt.y);g.scale(sq,sq);g.fillStyle=pressed?'#2a2d35':Bt.col;rr(-Bt.w/2,-Bt.h/2,Bt.w,Bt.h,Bt.h/2);g.fill();g.restore();
+      const lx=Bt.bell&&pressed?Bt.x+14:Bt.x;
+      text(pressed?Bt.off:Bt.on,lx,Bt.y+1,C.bs*sq,pressed?'#fff':Bt.fg,{alpha:c});
+      if(Bt.bell&&pressed)bell(Bt.x-Bt.w/2+34,Bt.y,C.bs*0.9,t-END-Bt.at,c);}
+    const d1='Illustration only: £2,000/month take-home, £1,200 bills, 12 months, no interest.',d2='Not financial advice.';
+    if(WIDE)text(d1+' '+d2,W/2,L.disc,L.ds,'#6f7486',{weight:500,alpha:a});
+    else{text(d1,W/2,L.disc,L.ds,'#6f7486',{weight:500,alpha:a});text(d2,W/2,L.disc+30,L.ds,'#6f7486',{weight:500,alpha:a});}
+  }
+}
+window.render=render;render(0);
+</script></body></html>
