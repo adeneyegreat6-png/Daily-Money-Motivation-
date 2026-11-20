@@ -12,5 +12,5 @@ Mark a topic [x] with the date once it is posted. When all are done, research ne
 - [x] 2026-11-15 How to Get Out of Debt: The Debt Snowball Method (boss battle) — snowball.html
 - [x] 2026-11-16 Sinking Funds: Pay for Christmas Without a Credit Card (roller-coaster) — sinking.html
 - [x] 2026-11-17 Pay Yourself First: Same Salary, Different Order (three-floor building) — payfirst.html
-- [ ] Lifestyle Creep: Pay Rise, Still Broke (roller-coaster)
+- [x] 2026-11-20 Lifestyle Creep: Pay Rise, Still Broke (roller-coaster) — creep.html
 - [ ] Buy Now Pay Later: The Real Cost of Four Easy Payments (dark minimal comparison)
