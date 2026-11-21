@@ -1,0 +1,107 @@
+<!doctype html><html><head><meta charset="utf-8"><style>html,body{margin:0;background:#000}canvas{display:block}</style></head><body>
+<canvas id="c" width="1080" height="1920"></canvas>
+<script>const WIDE=location.search.includes('wide');if(WIDE){const c=document.getElementById('c');c.width=1920;c.height=1080;}</script>
+<script src="common.js"></script>
+<script>
+// ===== "Buy Now Pay Later: The Real Cost of Four Easy Payments" — dark minimal comparison =====
+// Same £400 Black Friday TV. LEFT splits everything into 4 fortnightly payments (0% example, no fees shown)
+// and, because each payment looks small, also adds trainers £120 and gifts £200.
+// RIGHT saved £400 first, pays in full, and skips what wasn't planned.
+const BUYS=[['TV',400],['TRAINERS',120],['GIFTS',200]],N=4,UNIT=40;
+const TOTAL=BUYS.reduce((a,b)=>a+b[1],0),PER=BUYS.map(b=>b[1]/N),DUE=PER.reduce((a,b)=>a+b,0),EXTRA=TOTAL-BUYS[0][1];
+console.log('total',TOTAL,'per',PER,'due',DUE,'extra',EXTRA);
+if(TOTAL!==720||DUE!==180||DUE*N!==TOTAL||EXTRA!==320||PER.join()!=='100,30,50')throw new Error('numbers changed');
+const TP=[2.0,4.4,6.8],TTOT=9.0,T0=10.2,PT=1.2,T1=T0+N*PT,END=15.6; // T1=15.0
+const L=WIDE?{FLOOR:800,COLX:[660,1260],BH:15,sc:0.8,head:[80,155],hs:66,sub:228,subfs:28,rows:[282,328,374,422],cfs:22,pop:470,
+  lab:[70,122,156],fs:[60,24,20],cta:{tx:860,ty:1018,ts:30,b:[1115,990,190,56,28],bx:1210,by:1019,bs:26},disc:1062,ds:15,end:[[110,'FOUR SMALL PAYMENTS ARE STILL ONE BIG BILL.']],es:52,line:[300,1620]}
+ :{FLOOR:1320,COLX:[290,790],BH:28,sc:1.15,head:[250,335],hs:74,sub:440,subfs:32,rows:[560,625,690,758],cfs:26,pop:640,
+  lab:[82,142,180],fs:[68,26,21],cta:{tx:540,ty:1650,ts:34,b:[420,1690,240,66,33],bx:540,by:1723,bs:30},disc:1550,ds:20,end:[[250,'FOUR SMALL PAYMENTS'],[335,'ARE STILL ONE BIG BILL.']],es:68,line:[60,960]};
+const {FLOOR,COLX,BH}=L;
+function bundle(x,y,w,col,band){g.fillStyle=col;rr(x-w/2,y-BH+1,w,BH-2,3);g.fill();g.fillStyle='rgba(255,255,255,.25)';g.fillRect(x-w/2+4,y-BH+3,w-8,2);g.fillStyle=band;g.fillRect(x-7,y-BH+1,14,BH-2);}
+function stack(x,val,col,band,glow){
+  const n=val/UNIT,full=Math.floor(n+1e-6);
+  if(glow&&n>0){const gr=g.createRadialGradient(x,FLOOR-n*BH/2,10,x,FLOOR-n*BH/2,140+n*6);gr.addColorStop(0,glow);gr.addColorStop(1,'rgba(0,0,0,0)');g.fillStyle=gr;g.fillRect(x-300,FLOOR-n*BH-300,600,n*BH+300);}
+  for(let i=0;i<full;i++)bundle(x+(rand(i)-0.5)*4,FLOOR-i*BH,100,col,band);
+  const f=n-full;if(f>0.05){g.save();g.globalAlpha=f;bundle(x,FLOOR-full*BH,100,col,band);g.restore();}
+}
+function chip(s,x,y,a,col,fill){if(a<=0)return;const fs=L.cfs;g.save();g.globalAlpha=a;g.font=`800 ${fs}px Inter`;const w=g.measureText(s).width+36,h=fs*1.85;
+  const sc=0.85+0.15*back(clamp(a*1.3));g.translate(x,y);g.scale(sc,sc);
+  g.fillStyle=fill||'#14161b';g.strokeStyle=col;g.lineWidth=2.5;rr(-w/2,-h/2,w,h,h/2);g.fill();g.stroke();g.restore();text(s,x,y+1,fs*sc,fill?'#111':col,{weight:800,alpha:a});}
+// how much the BNPL shopper still owes at time t
+function owed(t){let v=0;BUYS.forEach(([n,p],i)=>v+=p*eOut(clamp((t-TP[i])/0.6)));
+  for(let k=0;k<N;k++)v-=DUE*eOut(clamp((t-(T0+k*PT)-0.15)/0.5));return Math.max(0,v);}
+const WK=['AT CHECKOUT','WEEK 2','WEEK 4','WEEK 6'];
+function render(t){
+  g.fillStyle='#060709';g.fillRect(0,0,W,H);
+  const sp=g.createRadialGradient(W/2,FLOOR-240,50,W/2,FLOOR-240,WIDE?900:800);sp.addColorStop(0,'rgba(255,255,255,.07)');sp.addColorStop(1,'rgba(255,255,255,0)');g.fillStyle=sp;g.fillRect(0,0,W,H);
+  g.fillStyle='#1c1e24';g.fillRect(L.line[0],FLOOR,L.line[1],3);
+  const intro=clamp((t-0.6)/0.4),pay=t>=T0,k=Math.min(N-1,Math.floor(clamp((t-T0)/PT,0,N-0.001))),ph=((t-T0)/PT)%1;
+  const chipOut=1-clamp((t-T0+0.3)/0.3);
+  // ---- LEFT: buy now pay later ----
+  {const x=COLX[0],cx=x-66,sx=x+78,ow=owed(t);
+    stack(sx,ow,'#c9364f','#ffb3c0',ow>0?'rgba(255,77,99,.22)':null);
+    let face='happy',armR=0.2;
+    for(const tp of TP)if(t>tp-0.2&&t<tp+0.6)armR=1.3;
+    if(t>TTOT)face='meh';
+    if(pay&&ph<0.45)face='shock';else if(pay)face='sad';
+    if(t>=T1)face='meh';
+    stick(cx,FLOOR,{acc:'cap',face,armL:0.15,armR,look:1,scale:L.sc,bob:Math.sin(t*5)*2});
+    BUYS.forEach(([n,p],i)=>chip(n+' '+gbp(p)+' = 4 × '+gbp(PER[i]),x,L.rows[i],clamp((t-TP[i])/0.35)*chipOut,'#ff7a90'));
+    for(let i=1;i<3;i++)pop('ONLY '+gbp(PER[i])+'!',sx+(WIDE?40:30),FLOOR-ow/UNIT*BH-(WIDE?30:40),(t-TP[i]-0.2)/1.1,'#ffd23f',WIDE?28:34);
+    chip('= '+gbp(DUE)+' DUE EVERY 2 WEEKS',x,L.rows[3],clamp((t-TTOT)/0.35)*chipOut,'#ffd23f','#ffd23f');
+    if(pay&&t<T1)pop('-'+gbp(DUE)+' DUE',x,L.pop,ph*1.15,'#ff4d63',WIDE?32:38);
+    const big=t<TP[0]?'£0':gbp(ow);
+    text(big,x,FLOOR+L.lab[0],L.fs[0],'#ff4d63',{alpha:intro});
+    text('STILL TO PAY',x,FLOOR+L.lab[1],L.fs[1],'#ff4d63',{spacing:3,alpha:intro});
+    const spent=BUYS.slice(0,TP.filter(tp=>t>=tp).length).reduce((a,b)=>a+b[1],0);
+    const sm=t<TP[0]?'Splits it into 4 easy payments':t<T1?'Bought '+gbp(spent)+' of stuff':'Spent '+gbp(TOTAL)+', not '+gbp(BUYS[0][1]);
+    text(sm,x,FLOOR+L.lab[2],L.fs[2],'#8f95a6',{weight:700,spacing:1,alpha:intro});
+  }
+  // ---- RIGHT: saved first, paid in full ----
+  {const x=COLX[1],cx=x-66,sx=x+78;
+    const fa=clamp((t-TP[0])/0.6),pot=t<TP[0]?BUYS[0][1]*clamp((t-0.6)/0.8):0;
+    stack(sx,pot,'#2fae63','#c8f5d8',pot>0?'rgba(61,220,132,.28)':null);
+    if(fa>0&&fa<1){g.save();g.globalAlpha=1-fa;for(let i=0;i<10;i++)bundle(sx+(cx-140-sx)*eOut(fa),FLOOR-i*BH-fa*140,100,'#2fae63','#c8f5d8');g.restore();}
+    let face=t>TP[0]?'happy':'meh',armR=t>TP[0]-0.2&&t<TP[0]+0.6?1.3:0.2;
+    if(t>=T1)face='cool';
+    stick(cx,FLOOR,{acc:'beanie',face,armL:0.15,armR,look:-1,scale:L.sc,bob:Math.sin(t*4+1)*2});
+    chip('TV £400 PAID IN FULL',x,L.rows[0],clamp((t-TP[0])/0.35)*chipOut,'#3ddc84');
+    chip('Trainers? Not planned',x,L.rows[1],clamp((t-TP[1])/0.35)*chipOut,'#3ddc84');
+    chip('Gifts? Waits till saved',x,L.rows[2],clamp((t-TP[2])/0.35)*chipOut,'#3ddc84');
+    chip('= £0 DUE',x,L.rows[3],clamp((t-TTOT)/0.35)*chipOut,'#3ddc84','#3ddc84');
+    if(pay&&t<T1)pop('£0 DUE',x,L.pop,ph*1.15,'#3ddc84',WIDE?32:38);
+    text('£0',x,FLOOR+L.lab[0],L.fs[0],'#3ddc84',{alpha:intro});
+    text('STILL TO PAY',x,FLOOR+L.lab[1],L.fs[1],'#3ddc84',{spacing:3,alpha:intro});
+    const sm=t<TP[0]?'Saved '+gbp(BUYS[0][1])+' first':t<T1?'Paid once. Nothing owed.':'Spent '+gbp(BUYS[0][1])+'. Nothing owed.';
+    text(sm,x,FLOOR+L.lab[2],L.fs[2],'#8f95a6',{weight:700,spacing:1,alpha:intro});
+  }
+  // ---- header ----
+  const hA=1-clamp((t-END)/0.4);
+  if(hA>0){
+    text('BUY NOW PAY LATER',W/2,L.head[0],L.hs,'#fff',{alpha:hA*clamp(t/0.4)});
+    text('4 EASY PAYMENTS?',W/2,L.head[1],L.hs,'#ffd23f',{alpha:hA*clamp((t-0.3)/0.4)});
+    if(!pay){const s=t<TTOT?'Same £400 Black Friday TV. Two ways to pay.':'Small payments make it easy to buy more';
+      const a=t<TTOT?clamp((t-0.9)/0.4)*(1-clamp((t-TTOT+0.3)/0.3)):clamp((t-TTOT)/0.3)*(1-clamp((t-T0+0.3)/0.3));
+      text(s,W/2,L.sub,L.subfs,'#9aa0b2',{weight:700,alpha:hA*a});}
+    else if(t<T1){const a=hA*clamp((t-T0)/0.3)*(1-clamp((t-T1+0.3)/0.3));
+      text('PAYMENT',W/2-35,L.sub,WIDE?28:30,'#9aa0b2',{align:'right',spacing:6,alpha:a});
+      text((k+1)+' OF 4',W/2-15,L.sub,WIDE?52:62,'#ffd23f',{align:'left',alpha:a});
+      text(WK[k],W/2,L.sub+(WIDE?50:62),WIDE?22:26,'#6f7486',{weight:800,spacing:4,alpha:a});}
+    else{const a=hA*clamp((t-T1)/0.3);text('Same TV. One spent '+gbp(EXTRA)+' more.',W/2,L.sub,L.subfs,'#cfd3e0',{weight:800,alpha:a});}
+  }
+  if(t>=END){const a=clamp((t-END-0.2)/0.4);
+    L.end.forEach(([y,s],i)=>text(s,W/2,y,L.es,i===L.end.length-1?'#ffd23f':'#fff',{alpha:clamp((t-END-0.2-i*0.4)/0.4)}));
+    text('Same TV. One spent '+gbp(EXTRA)+' more.',W/2,L.end[L.end.length-1][0]+(WIDE?70:90),L.subfs,'#cfd3e0',{weight:800,alpha:a});
+    const c=clamp((t-END-1.2)/0.4),C=L.cta;
+    text('Follow Daily Money Motivation',C.tx,C.ty,C.ts,'#cfd3e0',{weight:700,alpha:c});
+    if(c>0){const pressed=t>END+2.4,kk=clamp((t-END-2.4)/0.15),sq=1-0.08*Math.sin(Math.PI*kk);
+      const [bx,by,bw,bh,br]=C.b;g.save();g.globalAlpha=c;g.translate(bx+bw/2,by+bh/2);g.scale(sq,sq);g.fillStyle=pressed?'#2a2d35':'#ffd23f';rr(-bw/2,-bh/2,bw,bh,br);g.fill();g.restore();
+      text(pressed?'Following':'Follow',C.bx,C.by,C.bs*sq,pressed?'#fff':'#111',{alpha:c});}
+    const d1='Illustration only: example 0% pay-in-4 plans, no late fees shown. Missed payments can cost more.',d2='Not financial advice.';
+    if(WIDE)text(d1+' '+d2,W/2,L.disc,L.ds,'#6f7486',{weight:500,alpha:a});
+    else{text('Illustration only: example 0% pay-in-4 plans, no late fees shown.',W/2,L.disc,L.ds,'#6f7486',{weight:500,alpha:a});
+      text('Missed payments can cost more. Not financial advice.',W/2,L.disc+30,L.ds,'#6f7486',{weight:500,alpha:a});}
+  }
+}
+window.render=render;render(0);
+</script></body></html>
