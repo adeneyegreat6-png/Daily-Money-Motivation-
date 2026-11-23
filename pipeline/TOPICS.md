@@ -15,7 +15,7 @@ Mark a topic [x] with the date once it is posted. When all are done, research ne
 - [x] 2026-11-20 Lifestyle Creep: Pay Rise, Still Broke (roller-coaster) — creep.html
 - [x] 2026-11-21 Buy Now Pay Later: The Real Cost of Four Easy Payments (dark minimal comparison) — bnpl.html
 - [x] 2026-11-22 Frugal Living: The Packed Lunch Test (Motivated vs Disciplined) (gym motivated-vs-disciplined) — frugal.html
-- [ ] Money Tips: The 24-Hour Rule for Impulse Buys (boss machine) — rule24.html
+- [x] 2026-11-23 Money Tips: The 24-Hour Rule for Impulse Buys (boss machine) — rule24.html
 - [ ] Debt Free: Debt Avalanche vs Debt Snowball (pipes & barrels) — avalanche.html
 - [ ] How to Save Money Fast: The 30-Day No-Spend Challenge (roller-coaster) — nospend.html
 - [ ] Financial Freedom: How to Work Out Your Freedom Number (three-floor building) — freedom.html

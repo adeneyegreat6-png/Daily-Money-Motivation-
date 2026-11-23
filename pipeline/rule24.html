@@ -1,0 +1,130 @@
+<!doctype html><html><head><meta charset="utf-8"><style>html,body{margin:0;background:#000}canvas{display:block}</style></head><body>
+<canvas id="c" width="1080" height="1920"></canvas>
+<script>const WIDE=location.search.includes('wide');if(WIDE){const c=document.getElementById('c');c.width=1920;c.height=1080;}</script>
+<script src="common.js"></script>
+<script>
+// ===== "Money Tips: The 24-Hour Rule for Impulse Buys" — boss machine =====
+// The BUY NOW machine fires one £40 temptation a week for 52 weeks.
+// Left buys every one instantly. Right waits 24 hours first and still wants 1 in 4 (weeks 4, 8, ... 52).
+const PRICE=40,WEEKS=52,KEEP_EVERY=4;
+const boughtR=w=>Math.floor(w/KEEP_EVERY);        // after w weeks
+const SPENT_L=WEEKS*PRICE,SPENT_R=boughtR(WEEKS)*PRICE,KEPT=SPENT_L-SPENT_R;
+// cross-check: right skips 3 of every 4 offers
+if(SPENT_L!==2080||SPENT_R!==520||KEPT!==WEEKS*(KEEP_EVERY-1)/KEEP_EVERY*PRICE||KEPT!==1560)throw new Error('numbers changed');
+console.log('L',SPENT_L,'R',SPENT_R,'KEPT',KEPT);
+const ITEMS=['TRAINERS','HOODIE','GADGET','NEW GAME','SKINCARE','HEADPHONES','JACKET','PHONE CASE'];
+const T0=4.4,WK=0.18,FL=0.35,HOLD=0.17,T1=T0+(WEEKS-1)*WK+FL+HOLD+0.05,END=15.9; // T1≈14.15
+const L=WIDE?{FLOOR:800,COLX:[470,1430],sc:0.75,BX:28,mx:960,my:320,ms:0.75,head:[80,155],hs:62,sub:232,subfs:30,age:232,tag:440,hold:520,
+  lab:[70,120,154],fs:[60,24,20],bub:420,ev:[400,480],evs:[44,70],cta:{tx:860,ty:1018,ts:30,b:[1115,990,190,56,28],bx:1210,by:1019,bs:26},disc:1062,ds:15,end:[80,152],es:62,line:[260,1660]}
+ :{FLOOR:1320,COLX:[270,810],sc:0.95,BX:32,mx:540,my:530,ms:1,head:[250,335],hs:70,sub:430,subfs:34,age:430,tag:885,hold:1000,
+  lab:[80,140,174],fs:[68,26,21],bub:868,ev:[640,730],evs:[48,80],cta:{tx:540,ty:1640,ts:34,b:[420,1676,240,66,33],bx:540,by:1709,bs:30},disc:1540,ds:19,end:[250,325],es:58,line:[40,1000]};
+const {FLOOR,COLX,BX}=L;
+const figX=i=>COLX[i]-110, pileX=i=>COLX[i]+90;
+function slot(i,k){const c=k%6,r=Math.floor(k/6);return [pileX(i)+(c-2.5)*BX,FLOOR-r*BX-BX/2];}
+function parcel(x,y,s,a=1){if(a<=0)return;g.save();g.globalAlpha*=a;g.translate(x,y);g.fillStyle='#111';rr(-s/2-2,-s/2-2,s+4,s+4,5);g.fill();
+  g.fillStyle='#c9a06a';rr(-s/2,-s/2,s,s,4);g.fill();g.fillStyle='#e8394f';g.fillRect(-s*0.09,-s/2,s*0.18,s);g.fillStyle='rgba(255,255,255,.25)';g.fillRect(-s/2,-s/2,s,s*0.18);g.restore();}
+function tag(s,x,y,a,col){if(a<=0)return;const fs=WIDE?22:26;g.save();g.globalAlpha=a;g.font=`800 ${fs}px Inter`;const w=g.measureText(s).width+36,h=WIDE?42:48;
+  g.fillStyle='#14161b';g.strokeStyle=col;g.lineWidth=2.5;rr(x-w/2,y-h/2,w,h,h/2);g.fill();g.stroke();g.restore();text(s,x,y+1,fs,col,{weight:800,alpha:a});}
+function machine(t,a,mood){
+  if(a<=0)return;const s=L.ms,firing=t>=T0&&t<T1,sh=firing?Math.sin(t*60)*2:0;
+  g.save();g.globalAlpha=a;g.translate(L.mx+sh,L.my);g.scale(s,s);
+  // horns
+  g.fillStyle='#f1e7d0';for(const k of [-1,1]){g.beginPath();g.moveTo(k*95,4);g.lineTo(k*150,-70);g.lineTo(k*135,6);g.closePath();g.fill();}
+  // body
+  g.fillStyle='#8f5bff';g.strokeStyle='#111';g.lineWidth=6;rr(-150,0,300,300,30);g.fill();g.stroke();
+  g.fillStyle='rgba(255,255,255,.08)';rr(-140,10,40,280,16);g.fill();
+  // flashing sign
+  const fl=firing&&Math.floor(t*6)%2;g.fillStyle=mood==='sad'?'#3a3d46':fl?'#ff5a6e':'#ff2d3d';rr(-120,-58,240,50,25);g.fill();g.strokeStyle='#111';g.lineWidth=5;rr(-120,-58,240,50,25);g.stroke();
+  g.restore();
+  text(mood==='sad'?'OUT OF POWER':'BUY NOW!',L.mx+sh,L.my-33*s,(mood==='sad'?22:30)*s,'#fff',{alpha:a});
+  g.save();g.globalAlpha=a;g.translate(L.mx+sh,L.my);g.scale(s,s);
+  // eyes + brows
+  for(const k of [-1,1]){g.fillStyle='#fff';g.beginPath();g.arc(k*62,58,24,0,7);g.fill();g.fillStyle='#111';g.beginPath();g.arc(k*58,mood==='sad'?66:62,10,0,7);g.fill();
+    g.strokeStyle='#111';g.lineWidth=8;g.beginPath();if(mood==='sad'){g.moveTo(k*90,34);g.lineTo(k*36,26);}else{g.moveTo(k*95,26);g.lineTo(k*34,42);}g.stroke();}
+  // screen
+  g.fillStyle='#0d0e11';rr(-112,96,224,122,14);g.fill();
+  g.restore();
+  const wk=Math.min(WEEKS-1,Math.max(0,Math.floor((t-T0)/WK)));
+  const item=mood==='sad'?'NOTHING':ITEMS[wk%ITEMS.length];
+  text(item,L.mx+sh,L.my+128*s,26*s,'#ffd23f',{alpha:a});
+  text(mood==='sad'?'£0':gbp(PRICE),L.mx+sh,L.my+180*s,52*s,'#fff',{alpha:a});
+  g.save();g.globalAlpha=a;g.translate(L.mx+sh,L.my);g.scale(s,s);g.fillStyle='#111';rr(-72,236,144,36,10);g.fill();g.restore();
+}
+const mouth=()=>[L.mx,L.my+254*L.ms];
+function fly(x0,y0,x1,y1,q,arc){return [x0+(x1-x0)*q,y0+(y1-y0)*q-Math.sin(q*Math.PI)*arc];}
+
+function render(t){
+  g.fillStyle='#07080b';g.fillRect(0,0,W,H);
+  const sp=g.createRadialGradient(L.mx,L.my+150,40,L.mx,L.my+150,WIDE?900:800);sp.addColorStop(0,'rgba(143,91,255,.14)');sp.addColorStop(1,'rgba(143,91,255,0)');g.fillStyle=sp;g.fillRect(0,0,W,H);
+  g.fillStyle='#0e1015';g.fillRect(0,FLOOR,W,H-FLOOR);g.fillStyle='#22252d';g.fillRect(L.line[0],FLOOR,L.line[1]-L.line[0],3);
+  const running=t>=T0&&t<T1,done=t>=T1;
+  const wk=t<T0?0:Math.min(WEEKS,Math.floor((t-T0)/WK)+1);
+  const intro=clamp((t-0.6)/0.4),tagOut=1-clamp((t-T0+0.3)/0.3);
+  // machine
+  const mA=clamp((t-0.5)/0.4)*(1-0.88*clamp((t-T1-0.4)/0.5));
+  machine(t,mA,done?'sad':'angry');
+  // counts
+  let nL=0,nR=0;const [ox,oy]=mouth(),arc=WIDE?120:160;
+  for(let w=0;w<WEEKS;w++){const st=T0+w*WK;if(t<st)break;
+    const age=t-st;
+    // left: straight into the pile
+    if(age>=FL)nL++;else{const [x1,y1]=slot(0,nL);const [x,y]=fly(ox,oy,x1,y1,eOut(age/FL),arc);parcel(x,y,BX*0.95);}
+    // right: to the 24h hold first
+    const hx=pileX(1),hy=L.hold,keep=(w+1)%KEEP_EVERY===0;
+    if(age<FL){const [x,y]=fly(ox,oy,hx,hy,eOut(age/FL),arc*0.8);parcel(x,y,BX*0.95);}
+    else if(age<FL+HOLD){parcel(hx,hy,BX*1.1);
+      const q=(age-FL)/HOLD;g.strokeStyle='#3ddc84';g.lineWidth=5;g.beginPath();g.arc(hx,hy,BX*1.05,-Math.PI/2,-Math.PI/2+q*6.283);g.stroke();}
+    else if(keep){const dq=clamp((age-FL-HOLD)/0.15);if(dq>=1)nR++;else{const [x1,y1]=slot(1,nR);parcel(hx+(x1-hx)*dq,hy+(y1-hy)*eIn(dq),BX*0.95);}}
+    else{const fq=(age-FL-HOLD)/0.25;if(fq<1){parcel(hx+fq*30,hy-fq*40,BX*0.95,1-fq);}}
+  }
+  if(done){nL=WEEKS;nR=boughtR(WEEKS);}
+  for(let k=0;k<nL;k++)parcel(...slot(0,k),BX*0.95);
+  for(let k=0;k<nR;k++)parcel(...slot(1,k),BX*0.95);
+  // 24h pedestal
+  if(t>=T0-0.4){const a=clamp((t-T0+0.4)/0.3)*(1-clamp((t-T1)/0.4));if(a>0){const hx=pileX(1),hy=L.hold;
+    g.save();g.globalAlpha=a;g.strokeStyle='#2a6b48';g.lineWidth=3;g.setLineDash([6,6]);g.beginPath();g.arc(hx,hy,BX*1.05,0,7);g.stroke();g.restore();
+    text('24H',hx,hy+BX*1.7+(WIDE?6:8),WIDE?20:24,'#3ddc84',{weight:900,alpha:a,spacing:2});}}
+  // pops for skipped offers on the right
+  if(running){for(let w=0;w<WEEKS;w++){const st=T0+w*WK+FL+HOLD,age=t-st;if(age<0)break;if((w+1)%KEEP_EVERY===0||w%3)continue;if(age<0.6)pop("DON'T NEED IT",pileX(1)-(WIDE?10:30),L.hold-(WIDE?50:60),age/0.6,'#3ddc84',WIDE?22:26);}}
+  // figures
+  {const cx=figX(0);let face='happy',armR=0.4;if(running)armR=1.6+Math.sin(t*16)*0.3;if(done)face='shock';
+    stick(cx,FLOOR,{acc:'cap',face,armL:0.15,armR,look:1,scale:L.sc,bob:Math.sin(t*3)*2});
+    tag('BUYS IT NOW',cx+30,L.tag,clamp((t-1.2)/0.4)*tagOut,'#ff8a3d');
+    const ba=running&&wk>=14&&wk<=26?clamp((wk-14)/2)*(1-clamp((wk-24)/2)):0;if(ba>0)bubble('It was on offer!',cx+70,L.bub,ba);
+    text(gbp(nL*PRICE),COLX[0],FLOOR+L.lab[0],L.fs[0],'#ff8a3d',{alpha:intro});
+    text('SPENT',COLX[0],FLOOR+L.lab[1],L.fs[1],'#ff8a3d',{spacing:3,alpha:intro});
+    text('Bought '+nL+' of '+WEEKS+' offers',COLX[0],FLOOR+L.lab[2],L.fs[2],'#8f95a6',{weight:700,spacing:1,alpha:intro});}
+  {const cx=figX(1);const face=done?'cool':wk>2?'happy':'meh';
+    stick(cx,FLOOR,{acc:'beanie',face,armL:0.15,armR:0.3,look:1,scale:L.sc,bob:Math.sin(t*4+1)*2});
+    tag('WAITS 24 HOURS',cx+30,L.tag,clamp((t-2.4)/0.4)*tagOut,'#3ddc84');
+    const ba=running&&wk>=2&&wk<=12?clamp((wk-2)/2)*(1-clamp((wk-10)/2)):0;if(ba>0)bubble('Ask me tomorrow.',cx+40,L.bub,ba);
+    text(gbp(nR*PRICE),COLX[1],FLOOR+L.lab[0],L.fs[0],'#3ddc84',{alpha:intro});
+    text('SPENT',COLX[1],FLOOR+L.lab[1],L.fs[1],'#3ddc84',{spacing:3,alpha:intro});
+    text('Bought '+nR+' of '+WEEKS+' offers',COLX[1],FLOOR+L.lab[2],L.fs[2],'#8f95a6',{weight:700,spacing:1,alpha:intro});}
+  // gap
+  const ga=clamp((t-T1-0.5)/0.3)*(1-clamp((t-END+0.2)/0.3));
+  if(ga>0){text('SAME TEMPTATIONS =',W/2,L.ev[0],L.evs[0],'#fff',{stroke:8,sc:'#07080b',alpha:ga});
+    text(gbp(KEPT)+' KEPT A YEAR',W/2,L.ev[1],L.evs[1],'#ffd23f',{stroke:10,sc:'#07080b',alpha:ga});}
+  // header
+  const hA=1-clamp((t-END)/0.4);
+  if(hA>0){
+    text('MONEY TIPS:',W/2,L.head[0],L.hs,'#fff',{alpha:hA*clamp(t/0.4)});
+    text('THE 24-HOUR RULE',W/2,L.head[1],L.hs,'#ffd23f',{alpha:hA*clamp((t-0.3)/0.4)});
+    if(t<T0)text('A '+gbp(PRICE)+' impulse buy, every week',W/2,L.sub,L.subfs,'#9aa0b2',{weight:700,alpha:hA*clamp((t-0.8)/0.4)*(1-clamp((t-T0+0.4)/0.3))});
+    else{const a=hA*clamp((t-T0)/0.3);
+      text('WEEK',W/2-35,L.age,WIDE?28:30,'#9aa0b2',{align:'right',spacing:6,alpha:a});text(String(wk),W/2-15,L.age,WIDE?60:70,'#ffd23f',{align:'left',alpha:a});}
+  }
+  if(t>=END){const a=clamp((t-END-0.2)/0.4);
+    text('WANT IT? WAIT 24 HOURS.',W/2,L.end[0],L.es,'#fff',{alpha:a});
+    text('MOST WANTS DON’T LAST.',W/2,L.end[1],L.es,'#3ddc84',{alpha:clamp((t-END-0.6)/0.4)});
+    const c=clamp((t-END-1.2)/0.4),C=L.cta;
+    text('Follow Daily Money Motivation',C.tx,C.ty,C.ts,'#cfd3e0',{weight:700,alpha:c});
+    if(c>0){const pressed=t>END+2.4;g.save();g.globalAlpha=c;g.fillStyle=pressed?'#2a2d35':'#ffd23f';rr(...C.b);g.fill();g.restore();
+      text(pressed?'Following':'Follow',C.bx,C.by,C.bs,pressed?'#fff':'#111',{alpha:c});}
+    const d1='Illustration only: one £40 impulse buy a week; after waiting 24 hours, 1 in 4 still bought.',d2='Your spending will differ. Not financial advice.';
+    if(WIDE)text(d1+' '+d2,W/2,L.disc,L.ds,'#6f7486',{weight:500,alpha:a});
+    else{text(d1,W/2,L.disc,L.ds,'#6f7486',{weight:500,alpha:a});text(d2,W/2,L.disc+28,L.ds,'#6f7486',{weight:500,alpha:a});}
+  }
+}
+window.render=render;render(0);
+</script></body></html>
