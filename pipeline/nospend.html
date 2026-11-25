@@ -1,0 +1,139 @@
+<!doctype html><html><head><meta charset="utf-8"><style>html,body{margin:0;background:#000}canvas{display:block}</style></head><body>
+<canvas id="c" width="1080" height="1920"></canvas>
+<script>const WIDE=location.search.includes('wide');if(WIDE){const c=document.getElementById('c');c.width=1920;c.height=1080;}</script>
+<script src="common.js"></script>
+<script>
+// ===== "How to Save Money Fast: The 30-Day No-Spend Challenge" — roller-coaster style =====
+// Two riders, same month, same £360 of "extras" money after rent, bills and groceries.
+// USUAL MONTH: spends it on extras — weekdays £10 (coffee out £3.50, meal deal £4.50, snacks £2), weekends £17.50 (takeaway).
+// NO-SPEND: rent, bills and groceries still paid, no extras — moves each day's £10 / £17.50 into savings.
+// 30-day month starting on a Monday: 22 weekdays + 8 weekend days.
+const DAYS=30,WD=10,WE=17.5;
+const DAY=[];for(let d=0;d<DAYS;d++)DAY.push((d%7===5||d%7===6)?WE:WD);
+const CUM=[0];DAY.forEach(v=>CUM.push(CUM[CUM.length-1]+v));
+const TOTAL=CUM[DAYS],NWD=DAY.filter(v=>v===WD).length,NWE=DAYS-NWD;
+const ITEMS=[['COFFEE OUT',3.5],['MEAL DEAL',4.5],['SNACKS',2]];
+const ISUM=ITEMS.reduce((a,c)=>a+c[1],0),YEAR2=TOTAL*2;
+console.log('weekdays',NWD,'weekend',NWE,'total',TOTAL,'items',ISUM,'twice',YEAR2);
+if(NWD!==22||NWE!==8||TOTAL!==360||ISUM!==WD||NWD*WD+NWE*WE!==360||YEAR2!==720)throw new Error('numbers changed');
+const gbp2=v=>Number.isInteger(v)?gbp(v):'£'+v.toFixed(2);
+function cum(k){k=clamp(k,0,DAYS);const d=Math.floor(k),f=k-d;if(d>=DAYS)return TOTAL;return CUM[d]+DAY[d]*eOut(clamp(f/0.5));}
+function vA(k){return cum(k);}            // no-spend: savings pot rises
+function vB(k){return TOTAL-cum(k);}      // usual: extras money left falls
+const VF=[vA,vB],NPTS=DAYS;
+
+const T0=4.6,MT=0.32,T1=T0+DAYS*MT,END=15.8; // T1=14.2
+const L=WIDE?{head:[58,124],hs:54,sub:192,subfs:28,
+   P:[{x0:130,x1:870,zero:790,sc:0.95,lab:262,col:'#3ddc84',name:'NO-SPEND MONTH',acc:'beanie'},
+      {x0:1050,x1:1790,zero:790,sc:0.95,lab:262,col:'#ff5a6e',name:'USUAL MONTH',acc:'cap'}],
+   lfs:28,vfs:32,vdy:38,mfs:18,cs:0.2,cart:[70,38],res:[[500,880],[1420,880]],rfs:30,r2fs:24,rdy:42,mid:[960,950],midfs:26,
+   end:[[90,'30 DAYS OF NO EXTRAS = £360 KEPT.']],es:52,
+   cta:{txt:'Subscribe for a new money habit every day',tx:735,ty:1018,ts:30,btn:[{x:1205,y:1018,w:230,h:58,on:'Subscribe',off:'Subscribed',col:'#ff2d3d',fg:'#fff',at:2.4,bell:true}],bs:26},disc:1062,ds:15}
+ :{head:[250,335],hs:70,sub:440,subfs:34,
+   P:[{x0:120,x1:960,zero:960,sc:0.95,lab:525,col:'#3ddc84',name:'NO-SPEND MONTH',acc:'beanie'},
+      {x0:120,x1:960,zero:1470,sc:0.9,lab:1040,col:'#ff5a6e',name:'USUAL MONTH',acc:'cap',right:true}],
+   lfs:32,vfs:38,vdy:44,mfs:22,cs:0.24,cart:[84,44],res:[[540,1546],[540,1634]],rfs:34,r2fs:28,rdy:0,mid:[540,1550],midfs:34,
+   end:[[250,'30 DAYS OF NO EXTRAS'],[335,'= £360 KEPT.']],es:70,
+   cta:{txt:'Subscribe & follow Daily Money Motivation',tx:540,ty:1752,ts:36,btn:[{x:395,y:1830,w:270,h:68,on:'Subscribe',off:'Subscribed',col:'#ff2d3d',fg:'#fff',at:2.4,bell:true},{x:705,y:1830,w:230,h:68,on:'Follow',off:'Following',col:'#ffd23f',fg:'#111',at:3.0}],bs:30},disc:1676,ds:19};
+
+function bell(x,y,s,age,a){g.save();g.globalAlpha=a;g.translate(x,y);g.rotate(Math.sin(age*18)*0.35*Math.max(0,1-age/0.9));g.fillStyle='#ffd23f';
+  g.beginPath();g.moveTo(-s*0.45,s*0.3);g.quadraticCurveTo(-s*0.4,-s*0.5,0,-s*0.5);g.quadraticCurveTo(s*0.4,-s*0.5,s*0.45,s*0.3);g.closePath();g.fill();
+  g.beginPath();g.arc(0,s*0.42,s*0.13,0,7);g.fill();g.restore();}
+const px=(P,k)=>P.x0+(P.x1-P.x0)*k/DAYS;
+const py=(P,v)=>P.zero-v*P.sc;
+function prog(t){if(t<T0)return 0;return clamp((t-T0)/MT,0,DAYS);}
+function bg(){g.fillStyle='#07080b';g.fillRect(0,0,W,H);
+  const sp=g.createRadialGradient(W/2,H*0.42,40,W/2,H*0.42,WIDE?950:900);sp.addColorStop(0,'rgba(255,210,63,.07)');sp.addColorStop(1,'rgba(255,210,63,0)');g.fillStyle=sp;g.fillRect(0,0,W,H);
+  for(let i=0;i<60;i++){const x=rand(i)*W,y=rand(i+99)*H*0.95,tw=0.3+0.7*Math.abs(Math.sin(i));g.fillStyle=`rgba(255,255,255,${0.05+0.08*tw})`;g.fillRect(x,y,3,3);}}
+function track(P,f,a,draw){
+  const kmax=NPTS*draw;
+  g.save();g.globalAlpha=a;g.strokeStyle='rgba(255,255,255,.22)';g.lineWidth=3;g.setLineDash([10,10]);g.beginPath();g.moveTo(P.x0-20,P.zero);g.lineTo(P.x1+10,P.zero);g.stroke();g.setLineDash([]);g.restore();
+  text('£0',P.x0-30,P.zero,WIDE?20:24,'#8a90a3',{weight:800,align:'right',alpha:a});
+  // weekend shading
+  g.save();g.globalAlpha=a*0.5;g.fillStyle='rgba(255,210,63,.10)';
+  for(let d=0;d<DAYS;d++)if(DAY[d]===WE&&d<kmax){g.fillRect(px(P,d),P.zero-TOTAL*P.sc-10,px(P,d+1)-px(P,d),TOTAL*P.sc+10);}
+  g.restore();
+  g.save();g.globalAlpha=a*0.55;g.strokeStyle=P.col;g.lineWidth=4;
+  for(let k=0;k<=kmax+0.001&&k<=NPTS;k+=1){const x=px(P,k),y=py(P,f(Math.min(k,NPTS)));g.beginPath();g.moveTo(x,y);g.lineTo(x,P.zero);g.stroke();}
+  g.restore();
+  const pts=[];for(let k=0;k<=kmax;k+=0.02){pts.push([px(P,k),py(P,f(Math.min(k,NPTS)))]);}
+  if(pts.length>1){g.save();g.globalAlpha=a;g.lineCap='round';g.lineJoin='round';
+    for(const [w,c] of [[16,'#111'],[10,P.col],[3,'rgba(255,255,255,.5)']]){g.strokeStyle=c;g.lineWidth=w;g.beginPath();pts.forEach((p,i)=>i?g.lineTo(p[0],p[1]):g.moveTo(p[0],p[1]));g.stroke();}
+    g.restore();}
+  for(const d of [1,5,10,15,20,25,30]){const x=(px(P,d-1)+px(P,d))/2,y=P.zero+28;
+    text(String(d),x,y,L.mfs,'#6f7486',{weight:800,alpha:a*clamp((draw*NPTS-d+1)/1)});}
+}
+function rider(P,f,t,i){
+  const k=prog(t),x=px(P,k),v=f(k),y=py(P,v);
+  const k2=Math.min(k+0.3,NPTS),k1=Math.max(k2-0.3,0),ang=Math.atan2(py(P,f(k2))-py(P,f(k1)),px(P,k2)-px(P,k1)+0.001);
+  const [cw,ch]=L.cart;
+  let face='happy';
+  if(i&&t>=T0+4)face='meh'; if(i&&t>=T1)face='shock';
+  if(!i&&t>=T1)face='cool';
+  const up=(!i&&t>=T1)||(i&&t<T0&&t>1.6);
+  g.save();g.translate(x,y);g.rotate(clamp(ang,-1.0,1.0));
+  stick(0,-ch*0.2,{acc:P.acc,face,armL:up?2.6:0.5,armR:up?2.6:(i&&t>=T1?2.9:0.5),scale:L.cs,spread:0.05});
+  g.fillStyle=P.col;g.strokeStyle='#111';g.lineWidth=5;rr(-cw/2,-ch-6,cw,ch,10);g.fill();g.stroke();
+  g.fillStyle='rgba(0,0,0,.25)';rr(-cw/2+6,-ch+4,cw-12,8,4);g.fill();
+  for(const s of [-1,1]){g.fillStyle='#222';g.beginPath();g.arc(s*cw*0.3,-6,9,0,7);g.fill();g.fillStyle='#aaa';g.beginPath();g.arc(s*cw*0.3,-6,4,0,7);g.fill();}
+  g.restore();
+}
+function render(t){
+  g.clearRect(0,0,W,H);bg();
+  const build=eOut(clamp((t-0.8)/2.8));
+  L.P.forEach((P,i)=>{const a=clamp((t-0.6-i*0.3)/0.4),f=VF[i];
+    track(P,f,a,build);
+    const k=prog(t),v=f(k);
+    const vs=i?gbp(v)+' OF EXTRAS LEFT':gbp(v)+' SAVED';
+    const lx=P.right?P.x1+10:P.x0-10,al=P.right?'right':'left';
+    text(P.name,lx,P.lab,L.lfs,P.col,{align:al,stroke:7,sc:'#111',alpha:a,spacing:1});
+    text(vs,lx,P.lab+L.vdy,L.vfs,'#fff',{align:al,stroke:8,sc:'#111',alpha:a});
+    if(a>0){g.save();g.globalAlpha=a;rider(P,f,t,i);g.restore();}
+  });
+  const PA=L.P[0],PB=L.P[1];
+  // intro: what the usual month spends on
+  if(t>1.6&&t<T0){const out=1-clamp((t-T0+0.5)/0.4);
+    const bx=WIDE?1420:540,by=WIDE?862:1560,dy=WIDE?38:48,fs=WIDE?26:34;
+    ITEMS.forEach(([n,v],j)=>text(n+' '+gbp2(v),bx,by+j*dy,fs,'#ff8a96',{stroke:7,sc:'#111',alpha:clamp((t-1.8-j*0.5)/0.3)*out}));
+    text('= '+gbp(WD)+' A WEEKDAY · TAKEAWAY '+gbp2(WE)+' A WEEKEND DAY',bx,by+3*dy+(WIDE?2:8),WIDE?22:28,'#ffd23f',{stroke:7,sc:'#111',alpha:clamp((t-3.3)/0.3)*out});
+    text('BILLS & GROCERIES PAID. NO EXTRAS.',WIDE?500:120,WIDE?880:680,WIDE?26:32,'#3ddc84',{align:WIDE?'center':'left',stroke:7,sc:'#111',alpha:clamp((t-2.2)/0.4)*out});
+    text('Extras saved instead',WIDE?500:120,WIDE?920:724,WIDE?22:28,'#cfd3e0',{align:WIDE?'center':'left',weight:700,alpha:clamp((t-2.6)/0.4)*out});}
+  for(let d=0;d<DAYS;d++){const tt=T0+d*MT,age=(t-tt+0.02)/0.8;
+    if(age>0&&age<1&&(DAY[d]===WE||d%3===0)){
+      pop('+'+gbp2(DAY[d]),px(PA,d+0.5),py(PA,vA(d+0.5))-(WIDE?95:110),age,'#3ddc84',WIDE?22:26);
+      pop((DAY[d]===WE?'TAKEAWAY ':'')+'-'+gbp2(DAY[d]),px(PB,d+0.5),py(PB,vB(d))-(WIDE?95:110),age,'#ff8a96',WIDE?22:26);}}
+  if(t>=T0-0.3&&t<T1){const d=Math.min(DAYS,Math.floor(clamp((t-T0)/MT,0,DAYS-0.001))+1),a=clamp((t-T0+0.3)/0.3)*(1-clamp((t-T1+0.3)/0.3));
+    text('DAY '+d+' OF '+DAYS+(DAY[d-1]===WE?' · WEEKEND':''),L.mid[0],L.mid[1],L.midfs,DAY[d-1]===WE?'#ffd23f':'#cfd3e0',{weight:900,stroke:6,sc:'#111',alpha:a});}
+  if(t>=T1){const a=clamp((t-T1)/0.3),b=clamp((t-T1-0.4)/0.3);
+    if(WIDE){text(gbp(TOTAL)+' IN SAVINGS',L.res[0][0],L.res[0][1],L.rfs,'#3ddc84',{stroke:8,sc:'#111',alpha:a});
+      text('Twice a year = '+gbp(YEAR2),L.res[0][0],L.res[0][1]+L.rdy,L.r2fs,'#cfd3e0',{weight:700,alpha:b});
+      text(gbp(TOTAL)+' GONE ON EXTRAS',L.res[1][0],L.res[1][1],L.rfs,'#ff5a6e',{stroke:8,sc:'#111',alpha:a});
+      text('Coffee, meal deals, takeaways',L.res[1][0],L.res[1][1]+L.rdy,L.r2fs,'#cfd3e0',{weight:700,alpha:b});}
+    else{text('NO-SPEND: '+gbp(TOTAL)+' IN SAVINGS',L.res[0][0],L.res[0][1],L.rfs,'#3ddc84',{stroke:8,sc:'#111',alpha:a});
+      text('USUAL: '+gbp(TOTAL)+' GONE ON EXTRAS',L.res[0][0],L.res[0][1]+44,L.rfs,'#ff5a6e',{stroke:8,sc:'#111',alpha:a});
+      text('Do it twice a year = '+gbp(YEAR2)+' saved',L.res[1][0],L.res[1][1],L.r2fs,'#cfd3e0',{weight:700,alpha:b});}}
+  const hA=1-clamp((t-END)/0.4);
+  if(hA>0){
+    text('HOW TO SAVE MONEY FAST',W/2,L.head[0],L.hs*(WIDE?1:0.86),'#fff',{stroke:10,sc:'#111',alpha:hA*clamp(t/0.4)});
+    text('30-DAY NO-SPEND CHALLENGE',W/2,L.head[1],L.hs*(WIDE?1:0.86),'#ffd23f',{stroke:10,sc:'#111',alpha:hA*clamp((t-0.3)/0.4)});
+    const sub=t<T0?'Same month. Same '+gbp(TOTAL)+' of extras money.':t<T1?'One rides up. One rides down.':'Same 30 days. '+gbp(TOTAL)+' apart.';
+    const sa=t<T0?clamp((t-1.0)/0.4)*(1-clamp((t-T0+0.3)/0.3)):t<T1?clamp((t-T0)/0.3)*(1-clamp((t-T1+0.3)/0.3)):clamp((t-T1)/0.3);
+    text(sub,W/2,L.sub,L.subfs,'#9aa0b2',{weight:700,alpha:hA*sa});
+  }
+  if(t>=END){const a=clamp((t-END-0.2)/0.4);
+    L.end.forEach(([y,s],i)=>text(s,W/2,y,L.es,i===L.end.length-1?'#3ddc84':'#fff',{stroke:10,sc:'#111',alpha:clamp((t-END-0.2-i*0.3)/0.4)}));
+    const c=clamp((t-END-1.2)/0.4),C=L.cta;
+    text(C.txt,C.tx,C.ty,C.ts,'#cfd3e0',{weight:700,alpha:c});
+    if(c>0)for(const B of C.btn){const pressed=t>END+B.at,k=clamp((t-END-B.at)/0.15),sq=1-0.08*Math.sin(Math.PI*k);
+      g.save();g.globalAlpha=c;g.translate(B.x,B.y);g.scale(sq,sq);g.fillStyle=pressed?'#2a2d35':B.col;rr(-B.w/2,-B.h/2,B.w,B.h,B.h/2);g.fill();g.restore();
+      const lx=B.bell&&pressed?B.x+14:B.x;
+      text(pressed?B.off:B.on,lx,B.y+1,C.bs*sq,pressed?'#fff':B.fg,{alpha:c});
+      if(B.bell&&pressed)bell(B.x-B.w/2+34,B.y,C.bs*0.9,t-END-B.at,c);}
+    const d1='Illustration only: example £10 weekday / £17.50 weekend extras, 30-day month, no interest shown.',d2='Not financial advice.';
+    if(WIDE)text(d1+' '+d2,W/2,L.disc,L.ds,'#6f7486',{weight:500,alpha:a});
+    else{text(d1,W/2,L.disc,L.ds,'#6f7486',{weight:500,alpha:a});text(d2,W/2,L.disc+30,L.ds,'#6f7486',{weight:500,alpha:a});}
+  }
+}
+
+window.render=render;render(0);
+</script></body></html>
