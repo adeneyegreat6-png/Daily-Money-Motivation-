@@ -1,0 +1,107 @@
+<!doctype html><html><head><meta charset="utf-8"><style>html,body{margin:0;background:#000}canvas{display:block}</style></head><body>
+<canvas id="c" width="1080" height="1920"></canvas>
+<script>const WIDE=location.search.includes('wide');if(WIDE){const c=document.getElementById('c');c.width=1920;c.height=1080;}</script>
+<script src="common.js"></script>
+<script>
+// ===== "Financial Freedom: How to Work Out Your Freedom Number" — one three-floor building =====
+// Freedom number = monthly spending x 12 x 25 (the "4% rule" rule of thumb: 4% of the pot a year covers a year of spending).
+// Three floors, three lifestyles. Then: cut £100 a month on the middle floor -> £30,000 less needed.
+const FLO=[ // top -> bottom
+ {name:'BIG SPENDER',mo:4000,col:'#ff5a6e',acc:'tie'},
+ {name:'COMFORTABLE',mo:2500,col:'#ffd23f',acc:'cap'},
+ {name:'SIMPLE LIFE',mo:1500,col:'#3ddc84',acc:'beanie'},
+];
+const CUT=100;
+FLO.forEach(f=>{f.yr=f.mo*12;f.fn=f.yr*25;});
+const MID_NEW_MO=FLO[1].mo-CUT,MID_NEW_YR=MID_NEW_MO*12,MID_NEW_FN=MID_NEW_YR*25,SAVED_NEED=FLO[1].fn-MID_NEW_FN;
+console.log(FLO.map(f=>[f.mo,f.yr,f.fn]),MID_NEW_FN,SAVED_NEED);
+const ok=FLO[0].yr===48000&&FLO[0].fn===1200000&&FLO[1].yr===30000&&FLO[1].fn===750000&&FLO[2].yr===18000&&FLO[2].fn===450000
+  &&MID_NEW_YR===28800&&MID_NEW_FN===720000&&SAVED_NEED===30000&&CUT*12*25===30000
+  &&FLO.every(f=>Math.abs(f.fn*0.04-f.yr)<1e-9);
+if(!ok)throw new Error('numbers changed');
+
+const T_S1=2.2,T_S2=4.8,T_S3=7.4,CNT=2.0,T_CHK=10.8,T_CUT=13.2,END=16.0;
+const L=WIDE?{head:[58,124],hs:54,sub:196,subfs:30,top:290,fh:220,bx:300,bw:1320,roof:46,rfs:24,sc:0.38,figx:110,
+   nm:[30,22],eq:[0.41,112,34],fnl:[72,20],fnv:[132,64],popfs:34,end:90,es:64,
+   cta:{txt:'Subscribe & follow Daily Money Motivation',tx:640,ty:1018,ts:30,btn:[{x:1150,y:1018,w:230,h:58,on:'Subscribe',off:'Subscribed',col:'#ff2d3d',fg:'#fff',at:2.4,bell:true},{x:1400,y:1018,w:200,h:58,on:'Follow',off:'Following',col:'#ffd23f',fg:'#111',at:3.0}],bs:26},disc:1062,ds:15}
+ :{head:[250,335],hs:72,sub:448,subfs:32,top:600,fh:290,bx:50,bw:980,roof:60,rfs:28,sc:0.5,figx:120,
+   nm:[38,24],eq:[1,100,34],fnl:[160,22],fnv:[222,76],popfs:40,end:290,es:72,
+   cta:{txt:'Follow Daily Money Motivation',tx:540,ty:1752,ts:38,btn:[{x:395,y:1835,w:270,h:68,on:'Subscribe',off:'Subscribed',col:'#ff2d3d',fg:'#fff',at:2.4,bell:true},{x:705,y:1835,w:230,h:68,on:'Follow',off:'Following',col:'#ffd23f',fg:'#111',at:3.0}],bs:30},disc:1640,ds:19};
+const GREEN='#3ddc84',YEL='#ffd23f',GREY='#8f95a6';
+function bell(x,y,s,age,a){g.save();g.globalAlpha=a;g.translate(x,y);g.rotate(Math.sin(age*18)*0.35*Math.max(0,1-age/0.9));g.fillStyle=YEL;
+  g.beginPath();g.moveTo(-s*0.45,s*0.3);g.quadraticCurveTo(-s*0.4,-s*0.5,0,-s*0.5);g.quadraticCurveTo(s*0.4,-s*0.5,s*0.45,s*0.3);g.closePath();g.fill();
+  g.beginPath();g.arc(0,s*0.42,s*0.13,0,7);g.fill();g.restore();}
+function key(x,y,s,a){if(a<=0)return;g.save();g.globalAlpha=a;g.translate(x,y);g.scale(s,s);g.strokeStyle=YEL;g.lineWidth=9;g.lineCap='round';
+  g.beginPath();g.arc(-26,0,16,0,7);g.stroke();g.beginPath();g.moveTo(-10,0);g.lineTo(34,0);g.moveTo(22,0);g.lineTo(22,14);g.moveTo(32,0);g.lineTo(32,11);g.stroke();g.restore();}
+
+function render(t){
+  g.fillStyle='#07080b';g.fillRect(0,0,W,H);
+  const {top,fh,bx,bw}=L, bot=top+3*fh;
+  const sp=g.createRadialGradient(W/2,top+fh*1.5,60,W/2,top+fh*1.5,WIDE?950:900);sp.addColorStop(0,'rgba(255,255,255,.06)');sp.addColorStop(1,'rgba(255,255,255,0)');g.fillStyle=sp;g.fillRect(0,0,W,H);
+  g.fillStyle='#22252d';g.fillRect(0,bot,W,4);
+  // roof
+  const ap=clamp((t-0.3)/0.4);
+  g.save();g.globalAlpha=ap;g.fillStyle='#1a1c23';g.beginPath();g.moveTo(bx-18,top);g.lineTo(bx+bw/2,top-L.roof);g.lineTo(bx+bw+18,top);g.closePath();g.fill();g.restore();
+  text('FREEDOM TOWER',bx+bw/2,top-L.roof*0.36,L.rfs,'#cfd3e0',{spacing:4,alpha:ap});
+  const cutK=clamp((t-T_CUT-0.4)/1.2);
+  for(let f=0;f<3;f++){
+    const FL=FLO[f],y=top+f*fh,fa=clamp((t-0.5-f*0.15)/0.4),col=FL.col;
+    const isMid=f===1, cutOn=isMid&&t>=T_CUT;
+    g.save();g.globalAlpha=fa;g.fillStyle=['#10131a','#0f1117','#0e0f14'][f];g.fillRect(bx,y,bw,fh);
+    g.strokeStyle=cutOn?'rgba(61,220,132,.7)':'#2a2d36';g.lineWidth=4;g.strokeRect(bx,y,bw,fh);g.fillStyle=col;g.fillRect(bx,y,8,fh);g.restore();
+    // windows
+    g.save();g.globalAlpha=fa*0.5;g.fillStyle='#1c2029';for(let w=0;w<(WIDE?3:2);w++)rr(bx+bw*(WIDE?0.22:0.30)+w*(WIDE?60:58),y+fh*0.22,40,52,6),g.fill();g.restore();
+    text(FL.name,bx+30,y+L.nm[0],L.nm[1],col,{align:'left',spacing:2,alpha:fa});
+    // figure
+    let face='meh';if(t>T_S3+CNT+f*0.3)face=f===2?'happy':f===0?'shock':'meh';
+    if(isMid&&t>T_CUT+1.6)face='happy';if(t>=END)face=f===0?'meh':'cool';
+    const armR=(isMid&&t>T_CUT&&t<T_CUT+1.8)?1.25:0.2;
+    g.save();g.globalAlpha=fa;stick(bx+L.figx,y+fh-10,{acc:FL.acc,face,armL:0.15,armR,look:1,scale:L.sc,bob:Math.sin(t*4+f)*2});g.restore();
+    // equation line
+    const mo=cutOn?MID_NEW_MO:FL.mo, yr=mo*12;
+    let line='',la=0;
+    if(t>=T_S1&&t<T_S2){line=gbp(mo)+' a month';la=clamp((t-T_S1-f*0.25)/0.3);}
+    else if(t>=T_S2&&(t<T_CHK||cutOn)){line=gbp(mo)+' × 12 = '+gbp(yr)+' a year';la=cutOn?1:clamp((t-T_S2-f*0.25)/0.3);}
+    else if(t>=T_CHK){line='4% of it = '+gbp(FL.yr)+' a year';la=clamp((t-T_CHK-f*0.25)/0.3);}
+    const [eqf,eqy,eqs]=L.eq, ex=WIDE?bx+bw*eqf:bx+bw-28;
+    if(la>0)text(line,ex,y+eqy,eqs,(t>=T_CHK&&!cutOn)?'#cfd3e0':'#fff',{align:WIDE?'center':'right',weight:800,alpha:la});
+    // freedom number
+    const fx=bx+bw-28, k=clamp((t-T_S3-f*0.3)/CNT);
+    if(k>0){
+      let v=k<1?Math.round(FL.fn*eOut(k)/1000)*1000:FL.fn;
+      if(isMid&&t>=T_CUT)v=Math.round((FL.fn-(FL.fn-MID_NEW_FN)*eOut(cutK))/1000)*1000;
+      const a=clamp(k*5);
+      text('× 25 = FREEDOM NUMBER',fx,y+L.fnl[0],L.fnl[1],GREY,{align:'right',weight:800,spacing:2,alpha:a});
+      text(gbp(v),fx,y+L.fnv[0],L.fnv[1]*(k<1?1:1+0.05*Math.max(0,1-(t-T_S3-f*0.3-CNT)/0.3)),col,{align:'right',alpha:a});
+      g.font=`900 ${L.fnv[1]}px ${F}`;const nw=g.measureText(gbp(v)).width;
+      if(k>=1)key(fx-nw-(WIDE?50:62),y+L.fnv[0],WIDE?0.8:1,clamp((t-T_S3-f*0.3-CNT)/0.3));
+      if(isMid&&t>=T_CUT)pop('-'+gbp(SAVED_NEED),fx-nw-(WIDE?50:62)-(WIDE?150:175),y+L.fnv[0]+(WIDE?50:0),(t-T_CUT-1.2)/1.6,GREEN,L.popfs*1.1);
+    }
+    if(isMid&&t>=T_CUT){pop('-'+gbp(CUT)+'/mo',bx+bw*(WIDE?0.47:0.62),y+(WIDE?60:58),(t-T_CUT)/1.4,GREEN,L.popfs);}
+  }
+  // ---- header + step line ----
+  const hA=1-clamp((t-END)/0.4);
+  if(hA>0){
+    text("WHAT'S YOUR",W/2,L.head[0],L.hs,'#fff',{alpha:hA*clamp(t/0.4)});
+    text('FREEDOM NUMBER?',W/2,L.head[1],L.hs,YEL,{alpha:hA*clamp((t-0.3)/0.4)});
+    const steps=[[1.0,'Enough invested that you never need a wage','#9aa0b2'],[T_S1,'STEP 1: WHAT YOU SPEND A MONTH','#fff'],[T_S2,'STEP 2: × 12 = ONE YEAR','#fff'],
+      [T_S3,'STEP 3: × 25 = YOUR FREEDOM NUMBER',YEL],[T_CHK,'WHY 25? 4% A YEAR COVERS YOUR SPENDING','#cfd3e0'],[T_CUT,'CUT £100 A MONTH = £30,000 LESS NEEDED',GREEN]];
+    for(let i=0;i<steps.length;i++){const [s,txt,c]=steps[i],e=i+1<steps.length?steps[i+1][0]:END;
+      if(t>=s&&t<e){const a=hA*clamp((t-s)/0.3)*(1-clamp((t-e+0.25)/0.25));text(txt,W/2,L.sub,L.subfs*(i===0?0.9:1),c,{weight:i===0?700:900,alpha:a});}}
+  }
+  if(t>=END){const a=clamp((t-END-0.2)/0.4),sc=0.85+0.15*back(a);
+    text('SPEND LESS. NEED LESS.',W/2,L.end,L.es*sc,GREEN,{alpha:a,stroke:6});
+    const c=clamp((t-END-1.2)/0.4),C=L.cta;
+    text(C.txt,C.tx,C.ty,C.ts,'#cfd3e0',{weight:700,alpha:c});
+    if(c>0)for(const Bt of C.btn){const pressed=t>END+Bt.at,k=clamp((t-END-Bt.at)/0.15),sq=1-0.08*Math.sin(Math.PI*k);
+      g.save();g.globalAlpha=c;g.translate(Bt.x,Bt.y);g.scale(sq,sq);g.fillStyle=pressed?'#2a2d35':Bt.col;rr(-Bt.w/2,-Bt.h/2,Bt.w,Bt.h,Bt.h/2);g.fill();g.restore();
+      const lx=Bt.bell&&pressed?Bt.x+14:Bt.x;
+      text(pressed?Bt.off:Bt.on,lx,Bt.y+1,C.bs*sq,pressed?'#fff':Bt.fg,{alpha:c});
+      if(Bt.bell&&pressed)bell(Bt.x-Bt.w/2+34,Bt.y,C.bs*0.9,t-END-Bt.at,c);}
+    const d1='Illustration only: 25x yearly spending (the 4% rule of thumb), before tax and inflation; not guaranteed.',d2='Not financial advice.';
+    if(WIDE)text(d1+' '+d2,W/2,L.disc,L.ds,'#6f7486',{weight:500,alpha:a});
+    else{text(d1,W/2,L.disc,L.ds,'#6f7486',{weight:500,alpha:a});text(d2,W/2,L.disc+30,L.ds,'#6f7486',{weight:500,alpha:a});}
+  }
+}
+window.render=render;render(0);
+</script></body></html>

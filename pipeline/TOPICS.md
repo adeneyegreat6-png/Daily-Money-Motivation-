@@ -18,4 +18,4 @@ Mark a topic [x] with the date once it is posted. When all are done, research ne
 - [x] 2026-11-23 Money Tips: The 24-Hour Rule for Impulse Buys (boss machine) — rule24.html
 - [x] 2026-11-24 Debt Free: Debt Avalanche vs Debt Snowball (pipes & barrels) — avalanche.html
 - [x] 2026-11-25 How to Save Money Fast: The 30-Day No-Spend Challenge (roller-coaster) — nospend.html
-- [ ] Financial Freedom: How to Work Out Your Freedom Number (three-floor building) — freedom.html
+- [x] 2026-11-26 Financial Freedom: How to Work Out Your Freedom Number (three-floor building) — freedom.html

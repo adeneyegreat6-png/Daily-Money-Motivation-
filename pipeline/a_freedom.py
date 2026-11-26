@@ -1,0 +1,27 @@
+exec(open('a_compound.py').read().split('T0,T1,END')[0])
+T_S1,T_S2,T_S3,CNT,T_CHK,T_CUT,END=2.2,4.8,7.4,2.0,10.8,13.2,16.0
+add(thud(),0.05,0.8); add(whoosh(0.5),0.0,0.6)
+for f in range(3): add(whoosh(0.35),0.5+f*0.15,0.2)
+add(ping(1046),1.0,0.08)
+for f in range(3): add(ping(1318),T_S1+f*0.25,0.11)
+add(whoosh(0.4),T_S2-0.2,0.3)
+for f in range(3): add(ping(1568),T_S2+f*0.25,0.11)
+add(whoosh(0.5),T_S3-0.2,0.35)
+for f in range(3):
+    for k in range(8): add(clank(),T_S3+f*0.3+k*0.22,0.035)
+    add(thud(),T_S3+f*0.3+CNT,0.6); add(ping([1760,1568,2093][f]),T_S3+f*0.3+CNT+0.03,0.15)
+add(whoosh(0.4),T_CHK-0.2,0.3)
+for f in range(3): add(ping(1175),T_CHK+f*0.25,0.1)
+add(whoosh(0.5),T_CUT,0.4); add(ping(988),T_CUT+0.1,0.12)
+for k in range(5): add(clank(),T_CUT+0.4+k*0.24,0.04)
+add(thud(),T_CUT+1.6,0.8); add(ping(2093),T_CUT+1.65,0.18)
+add(whoosh(0.6),END,0.6); add(thud(),END+0.3,0.5)
+for f_ in (1046,1318,1568): add(ping(f_),END+0.35,0.12)
+add(ping(2093),END+1.2,0.2); add(ping(2637),END+2.4,0.25); add(ping(3136),END+3.0,0.2)
+fade=np.ones(N); fi=int(0.3*SR); fo=int(1.2*SR)
+fade[:fi]=np.linspace(0,1,fi); fade[-fo:]=np.linspace(1,0,fo)
+mix*=fade
+mix/=np.max(np.abs(mix))*1.12
+st=np.stack([mix,mix],1)
+wavfile.write('freedom.wav',SR,(st*32767).astype(np.int16))
+print('ok')
