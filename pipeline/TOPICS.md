@@ -19,3 +19,8 @@ Mark a topic [x] with the date once it is posted. When all are done, research ne
 - [x] 2026-11-24 Debt Free: Debt Avalanche vs Debt Snowball (pipes & barrels) — avalanche.html
 - [x] 2026-11-25 How to Save Money Fast: The 30-Day No-Spend Challenge (roller-coaster) — nospend.html
 - [x] 2026-11-26 Financial Freedom: How to Work Out Your Freedom Number (three-floor building) — freedom.html
+- [x] 2026-11-27 Money Hacks: The Subscription Audit (dark minimal comparison) — subs.html
+- [ ] Saving Money: The 1p Savings Challenge (365 days = £667.95) (roller-coaster)
+- [ ] Budgeting Tips: The Cash Envelope Method (pipes & barrels)
+- [ ] Minimalism: Buy Less, Keep More (gym motivated-vs-disciplined)
+- [ ] Ways to Save Money: Meal Planning vs Takeaways (boss machine)
